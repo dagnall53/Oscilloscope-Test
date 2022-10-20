@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+=======
+<<<<<<<< HEAD:Oscilloscope.ino
+========
+>>>>>>> de9d4837c9d4dc7c3ab27ed66fdaec0c054504fe
 #include <Arduino.h>
 /// NodeMCU numbering //this update: 08 July 2017
 /*  / these are defined in arduino
@@ -82,8 +87,12 @@ void setup() {
   pinMode(D4, OUTPUT);
   digitalWrite(D4, 0);  //DAG Turn on the blue LED
   delay(1000);
+<<<<<<< HEAD
   //ScreenUpdate(5000) ;
 //Serial.print(" Set up screen refresh at "); Serial.println (Screen_U_time());
+=======
+
+>>>>>>> de9d4837c9d4dc7c3ab27ed66fdaec0c054504fe
   if (!digitalRead(APMODE_BOOT_PIN)) {
     WiFi.disconnect();
     WiFi.softAP(ssid, password);
@@ -189,7 +198,11 @@ void loop() {
     PHASE = !PHASE;
   }
 
+<<<<<<< HEAD
   if ((currentTime - oldTime) >= 200)  //update the scope at ... .2 2 sec intervals?
+=======
+  if ((currentTime - oldTime) >= 2000)  //update the scope at 2 sec intervals?
+>>>>>>> de9d4837c9d4dc7c3ab27ed66fdaec0c054504fe
   {
     scopeHandler(webSocket);
     webSocketData = "";
@@ -275,4 +288,9 @@ void serialEvent() {
     inputString = "";
     stringComplete = false;
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>>> de9d4837c9d4dc7c3ab27ed66fdaec0c054504fe:Oscilloscope-Test.ino
+>>>>>>> de9d4837c9d4dc7c3ab27ed66fdaec0c054504fe
