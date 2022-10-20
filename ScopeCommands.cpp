@@ -21,7 +21,13 @@ long TAREB = 0;
 byte LastChanRead = 0;
 
 byte ScopeDigInput0,ScopeDigInput1;
-
+int Screen_update_time;
+int ScreenUpdate(int A) {
+  Screen_update_time = A;
+}
+int Screen_U_time(){
+  return Screen_update_time;
+}
 void SetDigInputs(byte D0 , byte D1){
   ScopeDigInput0 =D0;
   ScopeDigInput1 =D1;

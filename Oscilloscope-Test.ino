@@ -82,7 +82,8 @@ void setup() {
   pinMode(D4, OUTPUT);
   digitalWrite(D4, 0);  //DAG Turn on the blue LED
   delay(1000);
-
+  //ScreenUpdate(5000) ;
+//Serial.print(" Set up screen refresh at "); Serial.println (Screen_U_time());
   if (!digitalRead(APMODE_BOOT_PIN)) {
     WiFi.disconnect();
     WiFi.softAP(ssid, password);
@@ -188,7 +189,7 @@ void loop() {
     PHASE = !PHASE;
   }
 
-  if ((currentTime - oldTime) >= 2000)  //update the scope at 2 sec intervals?
+  if ((currentTime - oldTime) >= 200)  //update the scope at ... .2 2 sec intervals?
   {
     scopeHandler(webSocket);
     webSocketData = "";

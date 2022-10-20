@@ -8,8 +8,11 @@
 #include "I2CCommands.h"
 #include "miniDB.h"
 
+int ScreenUpdate(int A) ;
+int Screen_U_time();
 
 void SetDigInputs(byte D0 , byte D1);
+
 void scopeInit(void);
 
 void scopeHandler(WebSocketsServer &WEBSOCKETOBJECT);
