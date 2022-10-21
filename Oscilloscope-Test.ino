@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-=======
-<<<<<<<< HEAD:Oscilloscope.ino
-========
->>>>>>> de9d4837c9d4dc7c3ab27ed66fdaec0c054504fe
 #include <Arduino.h>
 /// NodeMCU numbering //this update: 08 July 2017
 /*  / these are defined in arduino
@@ -42,9 +37,9 @@
 #include "websiteHTML.h"
 #include "WebsocketInterpreter.h"
 
-byte  APMODE_BOOT_PIN = D3;  //DAG  press this pin to ground to start in AP mode..
-byte D_in1 = D1;  //DAG  
-byte D_in2 = D2;  //DAG 
+byte APMODE_BOOT_PIN = D3;  //DAG  press this pin to ground to start in AP mode..
+byte D_in1 = D1;            //DAG
+byte D_in2 = D2;            //DAG
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length);
 void handleRoot();
@@ -82,17 +77,15 @@ WebSocketsServer webSocket = WebSocketsServer(81);
 void BROADCAST(String MSG);
 
 void setup() {
-  SetDigInputs(D_in1,D_in2);
+  SetDigInputs(D_in1, D_in2);
   Serial.begin(115200);
   pinMode(D4, OUTPUT);
   digitalWrite(D4, 0);  //DAG Turn on the blue LED
   delay(1000);
-<<<<<<< HEAD
-  //ScreenUpdate(5000) ;
-//Serial.print(" Set up screen refresh at "); Serial.println (Screen_U_time());
-=======
 
->>>>>>> de9d4837c9d4dc7c3ab27ed66fdaec0c054504fe
+  //ScreenUpdate(5000) ;
+  //Serial.print(" Set up screen refresh at "); Serial.println (Screen_U_time());
+
   if (!digitalRead(APMODE_BOOT_PIN)) {
     WiFi.disconnect();
     WiFi.softAP(ssid, password);
@@ -198,16 +191,15 @@ void loop() {
     PHASE = !PHASE;
   }
 
-<<<<<<< HEAD
-  if ((currentTime - oldTime) >= 200)  //update the scope at ... .2 2 sec intervals?
-=======
-  if ((currentTime - oldTime) >= 2000)  //update the scope at 2 sec intervals?
->>>>>>> de9d4837c9d4dc7c3ab27ed66fdaec0c054504fe
-  {
-    scopeHandler(webSocket);
-    webSocketData = "";
-    oldTime = currentTime;
-  }
+
+  if ((currentTime - oldTime) >= 200)     //update the scope at ... .2 2 sec intervals?
+    if ((currentTime - oldTime) >= 2000)  //update the scope at 2 sec intervals?
+
+    {
+      scopeHandler(webSocket);
+      webSocketData = "";
+      oldTime = currentTime;
+    }
 }
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
@@ -288,9 +280,4 @@ void serialEvent() {
     inputString = "";
     stringComplete = false;
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>>> de9d4837c9d4dc7c3ab27ed66fdaec0c054504fe:Oscilloscope-Test.ino
->>>>>>> de9d4837c9d4dc7c3ab27ed66fdaec0c054504fe
