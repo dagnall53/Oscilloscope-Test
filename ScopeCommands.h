@@ -15,7 +15,7 @@ void SetDigInputs(byte D0 , byte D1);
 
 void scopeInit(void);
 
-void scopeHandler(WebSocketsServer &WEBSOCKETOBJECT);
+String scopeHandler(WebSocketsServer &WEBSOCKETOBJECT);
 
 void ADCInit(void);
 void setADCChannel(int CHANNEL);

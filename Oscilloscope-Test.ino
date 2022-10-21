@@ -38,9 +38,16 @@
 #include "WebsocketInterpreter.h"
 
 byte APMODE_BOOT_PIN = D3;  //DAG  press this pin to ground to start in AP mode..
-byte D_in1 = D1;            //DAG
-byte D_in2 = D2;            //DAG
+byte D_in1 = D7;            //DAG
+byte D_in2 = D8;            //DAG
+String string_in1 = "(D7)";
+String string_in2 = "(D8)";
+byte _SDA = D2;  //05
+byte _SCL = D1;  //04
 
+
+byte _Data = D3;  // for hx 711
+byte _Clock = D5;
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length);
 void handleRoot();
 void handleNotFound();
@@ -107,8 +114,9 @@ void setup() {
         delay(1000);
       }
     }
+    
     Serial.println("mDNS responder started");
-
+WiFi.softAP(ssid, password); // and keep standard ap on 192.168.4.1 
     Serial.print("Connect to http://Oscilloscope.local or http://");
     Serial.println(WiFi.localIP());
 
@@ -140,7 +148,7 @@ void setup() {
   server.begin();
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
-  Wire.begin();
+  Wire.begin(_SDA, _SCL);
   scopeInit();
   setMsTimer(500);  // initial  lazy flash timer for scope sampling rate timebase gets reset when pc connects html
   SetScalesConnected(0);
@@ -148,11 +156,11 @@ void setup() {
   LastSampleTime = currentTime;
   SettingsData = "";
   Serial.println("testing for Connected I2C devices");
-  //  scanI2CAddress(webSocket);
+  scanI2CAddress(webSocket);
   Serial.println(SinglescanI2CAddress(webSocket, 60));
   Serial.println(SinglescanI2CAddress(webSocket, 50));
   Serial.println("testing for HX 711   ");
-  //ScalesInit(D5, D6);   // needs to work if no hx711!
+  ScalesInit(_Data, _Clock);  // needs to work if no hx711!
   ADC1READ = 0;
   Serial.println("Waiting for browser to connect");
   clearADCScopeData1();
@@ -192,14 +200,14 @@ void loop() {
   }
 
 
-  if ((currentTime - oldTime) >= 200)     //update the scope at ... .2 2 sec intervals?
-    if ((currentTime - oldTime) >= 2000)  //update the scope at 2 sec intervals?
-
-    {
-      scopeHandler(webSocket);
-      webSocketData = "";
-      oldTime = currentTime;
-    }
+  if ((currentTime - oldTime) >= 1000)  //update the screen at ...this  interval
+  {
+    Serial.print("++[");
+    Serial.print(scopeHandler(webSocket)); Serial.println("]++");// dag temp test to undestand output
+    // typical data is ++[ [SCOPE ADC DATACHANNEL1 64 64 64 64 64 64 64 64 64 64] [SCOPE ADC DATACHANNEL2 0 0 0 0 0 0 0 0 0 0]]++
+    webSocketData = "";
+    oldTime = currentTime;
+  }
 }
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length) {

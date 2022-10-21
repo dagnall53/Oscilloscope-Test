@@ -53,7 +53,7 @@ void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKE
     if(scopeCommand.startsWith("MSTIMER"))
     {
       //Look at start of line for subtokens, add +1 to length to account for space
-      subLevelToken = "MSTIMER";  //DAG NB this is not the scope "timescale", but is the ms delay between scope samples..
+      subLevelToken = "MSTIMER";  //DAG NB this is not the scope "timescale", but is the ms delay between samples..
       setMsTimer(scopeCommand.substring(subLevelToken.length()+1).toInt());
     }
     if(scopeCommand.startsWith("SPS"))
@@ -84,7 +84,7 @@ void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKE
      if(scopeCommand.startsWith("TARE"))
     {
       //Look at start of line for subtokens, add +1 to length to account for space
-      subLevelToken = "TARE"; //dag NOT IMPLEMENTED, as HX711 does a TARE on startup.
+      subLevelToken = "TARE"; //dag NOT IMPLEMENTED in webpage, as HX711 does a TARE on startup.
       if(scopeCommand.substring(subLevelToken.length()+1) == "ON")
       {
         setTARE(true);   // Although not doing anything else yet, the button does change....

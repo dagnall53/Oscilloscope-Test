@@ -47,7 +47,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
      var xPlotPositionStep = 10;  //DAG is used as delta t in plot in scope calculated later from xPlotmSTimer etc.... 
     var xPlotTotalTimeMax = 10;
     var xPlotTotalTime = 10; 
-    var yPlotMax = 64;           // DAG Scope displ;ay is basically set up for 2048 INPUT = 64 v
+    var yPlotMax = 64;           // DAG Scope display is basically set up for 2048 INPUT = 64 v
     var channelIncomingYPlotPosition1 = 0;
     var channelIncomingYPlotPosition2 = 0;
     var peakDetectInputValue = 0;
@@ -956,7 +956,7 @@ function UpdateMST(currentmst)
            <option value="OFF">Off</option>
            <option value="SCALES">HX711 Scales Ch_A</option> 
            <option value="INT ADC"selected="selected">Internal ADC (A0)</option> 
-           <option value="DIG">Digital Input (D1)</option>
+           <option value="DIG">Digital Input"+ string_in1 + </option>
            <option value="4V ADC" >4V ADC</option>
            <option value="64V ADC">64V ADC</option>
           
@@ -967,7 +967,7 @@ function UpdateMST(currentmst)
           <option value="SCALES">HX711 Scales Ch_A</option> 
           <option value="SCALESB">HX711 Scales Ch_B</option> 
           <option value="INT ADC">Internal ADC (A0)</option>
-          <option value="DIG">Digital Input (D2)</option>
+          <option value="DIG">Digital Input (2)</option>
           <option value="4V ADC">4V ADC</option>
           <option value="64V ADC">64V ADC</option>
           <option value="UART">UART</option>
