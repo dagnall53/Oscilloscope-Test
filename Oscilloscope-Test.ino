@@ -35,19 +35,20 @@
 #include "ScopeCommands.h"
 //#include "miniDB.h" // called from scope commands and websocket interprete
 #include "websiteHTML.h"
+#include "webStripChart.h"
 #include "WebsocketInterpreter.h"
 
-byte APMODE_BOOT_PIN = D3;  //DAG  press this pin to ground to start in AP mode..
+byte APMODE_BOOT_PIN = D7;  //DAG  press this pin to ground to start in AP mode..
 byte D_in1 = D7;            //DAG
-byte D_in2 = D8;            //DAG
+byte D_in2 = D6;            //DAG
 String string_in1 = "(D7)";
-String string_in2 = "(D8)";
-byte _SDA = D2;  //05
-byte _SCL = D1;  //04
+String string_in2 = "(D6)";
+byte _SDA = D4;  //05
+byte _SCL = D5;  //04
+byte _Data = D0;  // for hx 711
+byte _Clock = D1;
 
 
-byte _Data = D3;  // for hx 711
-byte _Clock = D5;
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length);
 void handleRoot();
 void handleNotFound();
@@ -114,9 +115,9 @@ void setup() {
         delay(1000);
       }
     }
-    
+
     Serial.println("mDNS responder started");
-WiFi.softAP(ssid, password); // and keep standard ap on 192.168.4.1 
+    WiFi.softAP(ssid, password);  // and keep standard ap on 192.168.4.1
     Serial.print("Connect to http://Oscilloscope.local or http://");
     Serial.println(WiFi.localIP());
 
@@ -184,10 +185,24 @@ void loop() {
     ADCHandler(0);  // do both channels not neat but doing this after a message allows for chs being turned off and updating the web server
     scopeHandler(webSocket);
   }
+
+  //
+
+
+
+  // READ the ADC etc..
   if ((getMsTimer() >= 300) && (!ADC1READ) && (((currentTime - LastSampleTime) >= (getMsTimer() / 2)))) {
     ADCHandler(1);  // Do channels alternately if both ch on and mst timer is long??
     ADC1READ = true;
   }
+
+  // if ((currentTime - LastSampleTime) >= getMsTimer())  //get adc values
+  // {
+  //   ADCHandler(3);  // Do D1,D0, ADC channels synchronously  ??
+  //   LastSampleTime = currentTime;
+  //   digitalWrite(D4, PHASE);  //DAG LED flashing
+  //   PHASE = !PHASE;
+  // }
 
   if ((currentTime - LastSampleTime) >= getMsTimer())  //get adc values
   {
@@ -198,13 +213,14 @@ void loop() {
     digitalWrite(D4, PHASE);  //DAG LED flashing
     PHASE = !PHASE;
   }
-
+  ///
 
   if ((currentTime - oldTime) >= 1000)  //update the screen at ...this  interval
   {
-    Serial.print("++[");
-    Serial.print(scopeHandler(webSocket)); Serial.println("]++");// dag temp test to undestand output
+    //Serial.print("++[");
+    //Serial.print(scopeHandler(webSocket)); Serial.println("]++");// dag temp test to understand websockets outputs
     // typical data is ++[ [SCOPE ADC DATACHANNEL1 64 64 64 64 64 64 64 64 64 64] [SCOPE ADC DATACHANNEL2 0 0 0 0 0 0 0 0 0 0]]++
+    scopeHandler(webSocket);
     webSocketData = "";
     oldTime = currentTime;
   }
@@ -239,6 +255,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 
 void handleRoot() {
   server.send_P(200, "text/html", INDEX_HTML);
+}
+void SendStrip() {
+  server.send_P(200, "text/html", STRIP_HTML);
 }
 
 void handleNotFound() {

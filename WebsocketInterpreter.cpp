@@ -1,5 +1,5 @@
 #include "WebsocketInterpreter.h"
-
+extern void SendStrip();
 void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKETDATA)
 {
   String topLevelToken = "";
@@ -95,6 +95,27 @@ void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKE
       }
     }
   }
+  //Stripchart related tasks
+  if(WEBSOCKETDATA.startsWith("Strip"))
+  {
+    //Look at start of line for tokens, add +1 to length to account for space
+    topLevelToken = "STRIP";
+    String terminalCommand = WEBSOCKETDATA.substring(topLevelToken.length()+1);
+    if(terminalCommand.startsWith("Chart"))
+    {
+      //Look at start of line for subtokens, add +1 to length to account for space
+      subLevelToken = "CHART";
+      if(terminalCommand.substring(subLevelToken.length()+1) == "Selected")
+      { 
+        SendStrip();   // start alternate web display? not working 
+      }
+      else
+      {
+        //DISCONNECT FROM SERIAL
+      }
+    }
+  }
+
   //Terminal related tasks
   if(WEBSOCKETDATA.startsWith("TERMINAL"))
   {
