@@ -3,21 +3,21 @@ static const char PROGMEM STRIP_HTML[] = R"rawliteral(
 <html>
 
 <head>
-    <title>PicoGraphDemo</title>
+    <title> PicoGraphDemo</title>
     <script src="picograph.js"></script>
 </head>
 
 <body style="font-family: Lucida Console, Monaco, monospace;">
 
     <h1>PicoGraphDemo</h1>
-
+<a href=/HOME >
     <!-- Canvas for the graph -->
     <canvas
         id="graphDemo"
         style="width: 900px; height:200px; border:2px solid #000000;"
     >
     </canvas>
-
+</a>
     <!-- div for legends/labels -->
     <div id="graphLabels"></div>
 
