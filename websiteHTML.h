@@ -956,7 +956,7 @@ function UpdateMST(currentmst)
            <option value="OFF">Off</option>
            <option value="SCALES">HX711 Scales Ch_A</option> 
            <option value="INT ADC"selected="selected">Internal ADC (A0)</option> 
-           <option value="DIG">Digital Input"+ string_in1 + </option>
+           <option value="DIG">Digital Input 1 </option>
            <option value="4V ADC" >4V ADC</option>
            <option value="64V ADC">64V ADC</option>
           

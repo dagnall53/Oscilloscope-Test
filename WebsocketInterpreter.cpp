@@ -1,5 +1,5 @@
 #include "WebsocketInterpreter.h"
-extern void SendStrip();
+extern void handleTest();
 void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKETDATA)
 {
   String topLevelToken = "";
@@ -107,7 +107,7 @@ void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKE
       subLevelToken = "CHART";
       if(terminalCommand.substring(subLevelToken.length()+1) == "Selected")
       { 
-        SendStrip();   // start alternate web display? not working 
+       // handleTest();   // start alternate web display? not working 
       }
       else
       {

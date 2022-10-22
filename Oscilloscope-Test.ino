@@ -30,7 +30,7 @@
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <DNSServer.h>
-#include <WiFiManager.h>
+#include <WiFiManager.h>  // WIFI Manager by tzapu (tested 2.0.14)
 #include <Wire.h>
 #include "ScopeCommands.h"
 //#include "miniDB.h" // called from scope commands and websocket interprete
@@ -43,8 +43,8 @@ byte D_in1 = D7;            //DAG
 byte D_in2 = D6;            //DAG
 String string_in1 = "(D7)";
 String string_in2 = "(D6)";
-byte _SDA = D4;  //05
-byte _SCL = D5;  //04
+byte _SDA = D4;   //05
+byte _SCL = D5;   //04
 byte _Data = D0;  // for hx 711
 byte _Clock = D1;
 
@@ -70,6 +70,7 @@ unsigned long LastSampleTime = 0;
 String SettingsData;
 boolean PHASE;
 boolean ADC1READ;
+String localIPaddr = "";
 // DAG end
 
 const char *ssid = "Oscilloscope";
@@ -118,6 +119,7 @@ void setup() {
 
     Serial.println("mDNS responder started");
     WiFi.softAP(ssid, password);  // and keep standard ap on 192.168.4.1
+
     Serial.print("Connect to http://Oscilloscope.local or http://");
     Serial.println(WiFi.localIP());
 
@@ -144,11 +146,8 @@ void setup() {
     else if (error == OTA_END_ERROR) Serial.println("End Failed");
   });
   ArduinoOTA.begin();
-  server.on("/", handleRoot);
-  server.onNotFound(handleNotFound);
-  server.begin();
-  webSocket.begin();
-  webSocket.onEvent(webSocketEvent);
+  WebserverSetup();
+
   Wire.begin(_SDA, _SCL);
   scopeInit();
   setMsTimer(500);  // initial  lazy flash timer for scope sampling rate timebase gets reset when pc connects html
@@ -253,12 +252,59 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
   }
 }
 
+void WebserverSetup() {
+  server.on("/", handleRoot);
+  server.on("/HOME", handleRoot);
+  server.on("/DATA", SendDATA);
+  server.on("/TEST", handleTest);
+  server.onNotFound(handleNotFound);
+  server.begin();
+  webSocket.begin();
+  webSocket.onEvent(webSocketEvent);
+}
 void handleRoot() {
   server.send_P(200, "text/html", INDEX_HTML);
 }
-void SendStrip() {
+
+void handleTest() {
   server.send_P(200, "text/html", STRIP_HTML);
 }
+void SendDATA() {
+  server.sendContent(HTML_DATATEST());
+  server.sendContent("");
+  server.client().stop();
+}
+
+String HTML_DATATEST() {
+  String st = "<div class=\"div2\">";
+  st += "<p style=\"text-align:center;color:red\">*****TEST PAGE*****</p>";
+  st += "<br>\r\n";
+
+  st += "<br><b>WiFi DATA: </b>";
+  st += "<br><b>SSID: </b>" + String(ssid);
+  st += "<br><b>PASSWORD: </b>" + String(password);
+  st += "<br><b>Network Accessible IP ADDRESS: </b>" + String(WiFi.localIP().toString());
+  st += "<br><br>";
+  st += "<input style=\"cursor:pointer; font-size:80%;\" type=\"button\" onclick=\"window.location.href ='/HOME'\" value=  HOME ></div>";
+  st += "<br><input style=\"cursor:pointer; font-size:80%;\" type=\"button\" onclick=\"window.location.href ='/.'\" value=  Return ></div>";
+  st += "<br><input style=\"cursor:pointer; font-size:80%;\" type=\"button\" onclick=\"window.location.href ='/TEST'\" value= ' Goto TEST HTML - STRIP Chart '></div>";
+  st += "<br><input style=\"cursor:pointer; font-size:80%;\" type=\"button\" onclick=\"window.location.href ='/SeaTalk1'\" value=  ADDITIONAL_SEATALK1_SETTINGS + ></div>";
+
+
+  st += "<br><br>\r\n";
+  st += "ADD NOTES HERE <br><br>\r\n";
+  st += "<form>\r\n";
+  st += "<center><input class=\"but\" style=\"width:20%;\" type=\"button\" onclick=\"window.location.href ='/.'\" value=\"STOP\"></center>\r\n";
+  st += "</form><br><br>\r\n";
+  st += "</div></body></html>\r\n";
+  return st;
+}
+
+
+
+
+
+
 
 void handleNotFound() {
   String message = "File Not Found\n\n";
@@ -272,6 +318,7 @@ void handleNotFound() {
   for (uint8_t i = 0; i < server.args(); i++) {
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
   }
+ // message += "<input style=\"cursor:pointer; font-size:80%;\" type=\"button\" onclick=\"window.location.href ='/.'\" value=  Return ></div>";
   server.send(404, "text/plain", message);
 }
 
