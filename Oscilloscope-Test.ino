@@ -211,6 +211,18 @@ void loop() {
     LastSampleTime = currentTime;
     digitalWrite(D4, PHASE);  //DAG LED flashing
     PHASE = !PHASE;
+
+  //if(get_data){
+    // Serial.println(bmp.readTemperature());
+    String json = "{\"value\":";
+    json += "100";
+    json += "}";
+    webSocket.broadcastTXT(json.c_str(), json.length());
+    //get_data = false;
+  //}
+
+
+
   }
   ///
 
@@ -257,6 +269,7 @@ void WebserverSetup() {
   server.on("/HOME", handleRoot);
   server.on("/DATA", SendDATA);
   server.on("/TEST", handleTest);
+   server.on("/STRIP", handleStrip);
   server.onNotFound(handleNotFound);
   server.begin();
   webSocket.begin();
@@ -267,6 +280,9 @@ void handleRoot() {
 }
 
 void handleTest() {
+  server.send_P(200, "text/html", Chart2);
+}
+void handleStrip() {
   server.send_P(200, "text/html", STRIP_HTML);
 }
 void SendDATA() {
@@ -288,7 +304,8 @@ String HTML_DATATEST() {
   st += "<input style=\"cursor:pointer; font-size:80%;\" type=\"button\" onclick=\"window.location.href ='/HOME'\" value=  HOME ></div>";
   st += "<br><input style=\"cursor:pointer; font-size:80%;\" type=\"button\" onclick=\"window.location.href ='/.'\" value=  Return ></div>";
   st += "<br><input style=\"cursor:pointer; font-size:80%;\" type=\"button\" onclick=\"window.location.href ='/TEST'\" value= ' Goto TEST HTML - STRIP Chart '></div>";
-  st += "<br><input style=\"cursor:pointer; font-size:80%;\" type=\"button\" onclick=\"window.location.href ='/SeaTalk1'\" value=  ADDITIONAL_SEATALK1_SETTINGS + ></div>";
+    st += "<br><input style=\"cursor:pointer; font-size:80%;\" type=\"button\" onclick=\"window.location.href ='/STRIP'\" value= ' Goto PicoGraph demo Chart '></div>";
+ // st += "<br><input style=\"cursor:pointer; font-size:80%;\" type=\"button\" onclick=\"window.location.href ='/SeaTalk1'\" value=  ADDITIONAL_SEATALK1_SETTINGS + ></div>";
 
 
   st += "<br><br>\r\n";
