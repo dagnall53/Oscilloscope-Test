@@ -38,18 +38,30 @@ void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKE
     //Look at start of line for tokens, add +1 to length to account for space
     topLevelToken = "SCOPE";
     String scopeCommand = WEBSOCKETDATA.substring(topLevelToken.length()+1);
+   
+   if(scopeCommand.startsWith("DUPLEX 1"))
+    {
+      //Look at start of line for subtokens, add +1 to length to account for space
+      subLevelToken = "DUPLEX 1";
+      setDuplexMode(true);
+      } 
+    
     if(scopeCommand.startsWith("CHANNEL 1"))
     {
+      setDuplexMode(false);
       //Look at start of line for subtokens, add +1 to length to account for space
       subLevelToken = "CHANNEL 1";
       setChannelMode1(scopeCommand.substring(subLevelToken.length()+1));
      }
     if(scopeCommand.startsWith("CHANNEL 2"))
     {
+      setDuplexMode(false);
       //Look at start of line for subtokens, add +1 to length to account for space
       subLevelToken = "CHANNEL 2";
       setChannelMode2(scopeCommand.substring(subLevelToken.length()+1));
     }
+    
+    
     if(scopeCommand.startsWith("MSTIMER"))
     {
       //Look at start of line for subtokens, add +1 to length to account for space
@@ -96,7 +108,7 @@ void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKE
     }
   }
   //Stripchart related tasks
-  if(WEBSOCKETDATA.startsWith("Strip"))
+  if(WEBSOCKETDATA.startsWith("Strip"))   // comes from 
   {
     //Look at start of line for tokens, add +1 to length to account for space
     topLevelToken = "STRIP";

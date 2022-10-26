@@ -33,6 +33,8 @@ void clearADCScopeData2(void);
 
 
 //SCOPE PARAMETERS
+void setDuplexMode( bool Duplex);
+bool getDuplexMode (void);
 void setChannelMode1(String MODE);
 void setChannelMode2(String MODE);
 String getChanneMode1(void);

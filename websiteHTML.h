@@ -122,21 +122,21 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
             dataChannelOnFlag1 = true;
       if(wsMessageArray.length > 3)
       { 
-        if(PlotEdgeReached)   {  
-          clearPlot();    
-          PlotStraightLine=true   ;// should trigger drawstraightline in update plot's first stroke only  
-        }
-        else{
+       // if(PlotEdgeReached)   {  
+       //   clearPlot();    
+       //   PlotStraightLine=true   ;// should trigger drawstraightline in update plot's first stroke only  
+       // }
+       // else{
             
              // we add blank plot space to account for missing adc samples during the websocket data send
        
-            MissingSteps=(200/xPlotmSTimer)*xPlotPositionStep; // 200ms is the websocket update dropout in the esp code
-            xPlotOldPosition += MissingSteps; 
-            xPlotOldPosition2 +=MissingSteps;
-            xPlotCurrentPosition +=MissingSteps;
-            xPlotCurrentPosition2 +=MissingSteps; 
-            PlotStraightLine=true   ;// should trigger drawstraightline in update plot's first stroke only 
-           }   
+       //     MissingSteps=(200/xPlotmSTimer)*xPlotPositionStep; // 200ms is the websocket update dropout in the esp code
+       //     xPlotOldPosition += MissingSteps; 
+       //     xPlotOldPosition2 +=MissingSteps;
+       //     xPlotCurrentPosition +=MissingSteps;
+       //     xPlotCurrentPosition2 +=MissingSteps; 
+       //     PlotStraightLine=true   ;// should trigger drawstraightline in update plot's first stroke only 
+       //    }   
        for(var updatePlotCounter = 3; updatePlotCounter <= (wsMessageArray.length-1); updatePlotCounter++)
            { 
              updatePlot(parseInt(wsMessageArray[updatePlotCounter]));
@@ -304,8 +304,8 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         }
       }
     }
-function UpdateMST(currentmst)
-{
+    function UpdateMST(currentmst)
+    {
     xPlotmSTimer=3   
      if ((document.getElementById("channelSelectElement1").value==="SCALES")||(document.getElementById("channelSelectElement2").value==="SCALES"))
      {
@@ -314,14 +314,14 @@ function UpdateMST(currentmst)
     {
       xPlotmSTimer = 1500;}
     }
- if (currentmst!=xPlotmSTimer)
-   {
+     if (currentmst!=xPlotmSTimer)
+     {
         data2send="";
         data2send = "SCOPE MSTIMER ";
         data2send += xPlotmSTimer;
         websock.send(data2send);
+     }
    }
-}
     function adjustCanvas()
     {
       var currentClientWidth = (document.documentElement.clientWidth);
@@ -402,6 +402,7 @@ function UpdateMST(currentmst)
             FirstAfterCLS=0;  
             PlotEdgeReached=false;
     }
+
 
     function updatePlot(incomingYPlotPosition)
     {
@@ -527,12 +528,18 @@ function UpdateMST(currentmst)
       currentScreenElement = "TERMINAL";
       updateButtonSelect(currentScreenElement);
     }
+    function selectStripChart()
+    {
+      currentScreenElement = "STRIPCHART";
+      updateButtonSelect(currentScreenElement);
+
+    }
 
     function selectI2C()
     {
       currentScreenElement = "I2C";
       updateButtonSelect(currentScreenElement);
-    i2cFindDevices();
+      i2cFindDevices();
     }
 
     function updateButtonSelect(BUTTON)
@@ -543,6 +550,9 @@ function UpdateMST(currentmst)
       document.getElementById("setScopeButton").style.color = "white";
       document.getElementById("setTerminalButton").style.backgroundColor = "#E87D75";
       document.getElementById("setTerminalButton").style.color = "white";
+      document.getElementById("setStripChartButton").style.backgroundColor = "#E87D75";
+      document.getElementById("setStripChartButton").style.color = "white";
+
       document.getElementById("setI2CButton").style.backgroundColor = "#E87D75";
       document.getElementById("setI2CButton").style.color = "white";
       document.getElementById("oscilloscopeScreenElement").style.display = "none";
@@ -560,6 +570,13 @@ function UpdateMST(currentmst)
         document.getElementById("setTerminalButton").style.color = "#4E4E56";
         document.getElementById("terminalScreenElement").style.display = "block";
       }
+      if(BUTTON === "STRIPCHART")
+      {
+        document.getElementById("setStripChartButton").style.backgroundColor = "white";
+        document.getElementById("setStripChartButton").style.color = "#4E4E56";
+        document.getElementById("terminalScreenElement").style.display = "block";
+      }
+
       if(BUTTON === "I2C")
       {
         document.getElementById("setI2CButton").style.backgroundColor = "white";
@@ -587,10 +604,6 @@ function UpdateMST(currentmst)
     function changeTimeScale()
     { 
       xPlotTotalTimeMax = document.getElementById("timescaleSelectElement").value;
-     // timeScaleSelect = "SCOPE TIMESCALE ";
-     //timeScaleSelect+=  document.getElementById("timescaleSelectElement").value;
-     //  faulty attempt to send time data to the ESP 
-     //websock.send(timeScaleSelect);
       clearPlot();
     }
 
@@ -622,14 +635,14 @@ function UpdateMST(currentmst)
       if(terminalConnectFlag)
       {
         terminalConnectFlag = false;
-        document.getElementById("connectTerminalButton").innerHTML = "<b>Disconnected</b>"
+        document.getElementById("connectTerminalButton").innerHTML = "<b>Disconnected</b>";
         document.getElementById("connectTerminalButton").style.backgroundColor = "#E87D75";
         websock.send("TERMINAL CONNECT OFF");
       }
       else
       {
         terminalConnectFlag = true;
-        document.getElementById("connectTerminalButton").innerHTML = "<b>Connected</b>"
+        document.getElementById("connectTerminalButton").innerHTML = "<b>Connected</b>";
         document.getElementById("connectTerminalButton").style.backgroundColor = "#4E4E56";
         websock.send("TERMINAL CONNECT ON");
       }
@@ -640,14 +653,14 @@ function UpdateMST(currentmst)
       if(pauseScopeFlag)
       {
         pauseScopeFlag = false;
-        document.getElementById("togglePauseButton").innerHTML = "<b>Pause: Off</b>"
+        document.getElementById("togglePauseButton").innerHTML = "<b>Pause: Off</b>";
         document.getElementById("togglePauseButton").style.backgroundColor = "#E87D75";
         clearPlot();
       }
       else
       {
         pauseScopeFlag = true;
-        document.getElementById("togglePauseButton").innerHTML = "<b>Pause: On</b>"
+        document.getElementById("togglePauseButton").innerHTML = "<b>Pause: On</b>";
         document.getElementById("togglePauseButton").style.backgroundColor = "#4E4E56";
       }
     }
@@ -657,13 +670,13 @@ function UpdateMST(currentmst)
       if(peakDetectionFlag)
       {
         peakDetectionFlag = false;
-        document.getElementById("togglePeakDetectionButton").innerHTML = "<b>Peak Detection: Off</b>"
+        document.getElementById("togglePeakDetectionButton").innerHTML = "<b>Peak Detection: Off</b>";
         document.getElementById("togglePeakDetectionButton").style.backgroundColor = "#E87D75";
       }
       else
       {
         peakDetectionFlag = true;
-        document.getElementById("togglePeakDetectionButton").innerHTML = "<b>Peak Detection: On</b>"
+        document.getElementById("togglePeakDetectionButton").innerHTML = "<b>Peak Detection: On</b>";
         document.getElementById("togglePeakDetectionButton").style.backgroundColor = "#4E4E56";
       }
     }
@@ -866,6 +879,11 @@ function UpdateMST(currentmst)
           document.getElementById("oscilloscopeScreenElement").style.display = "block";
           document.getElementById("oscilloscopeScreenElement").style.width = "85%";
         }
+        if(currentScreenElement === "STRIPCHART")
+        {
+          //document.getElementById("StripChartScreenElement").style.display = "block";
+          //document.getElementById("StripChartScreenElement").style.width = "85%";
+        }
         if(currentScreenElement === "TERMINAL")
         {
           document.getElementById("terminalScreenElement").style.display = "block";
@@ -905,21 +923,27 @@ function UpdateMST(currentmst)
         toggleSettingsElementFlag = true;
       }
     }
+	
+	
   </script>
 </head>
 
 <body onload="javascript:start();" onresize="adjustCanvas();" id="mainBody" style="position:relative; overflow:hidden; width:98vw; height:90vh; margin:0; padding:0; margin-left:1vw; background-color:#4E4E56;" tabindex="1">
   <div id="toggleMenuElement" style="text-align:center; height: 10vh; margin-top: 2.5vh; margin-bottom: 2.5vh;">
-    <div style="display:block; width: 85%; height: 70vh; text-align:center; margin-left:7.5%;"> <button id="setScopeButton" style="-webkit-appearance: none; width: 23.5%; height: 10vh; background-color:white; color:#4E4E56; text-decoration: none; border: 0; padding: 0; border-radius: 5px; font-family:Helvetica; margin-right:1%;" onclick="selectScope()">
+    <div style="display:block; width: 85%; height: 70vh; text-align:center; margin-left:7.5%;"> 
+      <button id="setScopeButton" style="-webkit-appearance: none; width: 15%; height: 10vh; background-color:white; color:#4E4E56; text-decoration: none; border: 0; padding: 0; border-radius: 5px; font-family:Helvetica; margin-right:1%;" onclick="selectScope()">
         <b>Oscilloscope</b>
       </button><!--NOTE: This comment is to prevent white space between inline blocking elements.
-     --><button id="setTerminalButton" style="-webkit-appearance: none; width: 23.5%; height: 10vh; background-color:#E87D75; color:white; text-decoration: none; border: 0; padding: 0; border-radius: 5px; font-family:Helvetica; margin-left:1%; margin-right:1%;" onclick="selectTerminal()">
+     --><button id="setTerminalButton" style="-webkit-appearance: none; width: 15%; height: 10vh; background-color:#E87D75; color:white; text-decoration: none; border: 0; padding: 0; border-radius: 5px; font-family:Helvetica; margin-left:1%; margin-right:1%;" onclick="selectTerminal()">
         <b>Terminal</b>
       </button><!--NOTE: This comment is to prevent white space between inline blocking elements.
-     --><button id="setI2CButton" style="-webkit-appearance: none; width: 23.5%; height: 10vh; background-color:#E87D75; color:white; text-decoration: none; border: 0; padding: 0; border-radius: 5px; font-family:Helvetica; margin-left:1%; margin-right:1%;" onclick="selectI2C()">
+    --><a href =/STRIP ><button  id="setStripChartButton" style="-webkit-appearance: none; width: 15%; height: 10vh; background-color:#E87D75; color:white; text-decoration: none; border: 0; padding: 0; border-radius: 5px; font-family:Helvetica; margin-left:1%; margin-right:1%;" onclick="selectStripChart()">
+        <b>StripChart</b> 
+      </button></a><!--NOTE: This comment is to prevent white space between inline blocking elements.
+     --><button id="setI2CButton" style="-webkit-appearance: none; width: 15%; height: 10vh; background-color:#E87D75; color:white; text-decoration: none; border: 0; padding: 0; border-radius: 5px; font-family:Helvetica; margin-left:1%; margin-right:1%;" onclick="selectI2C()">
         <b>I2C</b>
       </button><!--NOTE: This comment is to prevent white space between inline blocking elements.
-     --><button id="setSettingsButton" style="-webkit-appearance: none; width: 23.5%; height: 10vh; background-color:#E87D75; color:white; text-decoration: none; border: 0; padding: 0; border-radius: 5px; font-family:Helvetica; margin-left:1%;" onclick="updateSettingsElementToggle()">
+     --><button id="setSettingsButton" style="-webkit-appearance: none; width: 15%; height: 10vh; background-color:#E87D75; color:white; text-decoration: none; border: 0; padding: 0; border-radius: 5px; font-family:Helvetica; margin-left:1%;" onclick="updateSettingsElementToggle()">
         <b>Settings</b>
       </button> </div>
   </div><!--NOTE: This comment is to prevent white space between inline blocking elements.

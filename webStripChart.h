@@ -2,76 +2,6 @@
 // https://github.com/RainingComputers/picograph.js
 
 
-//https://www.youtube.com/watch?v=lEVoRJSsEa8&t=84s
-//https://www.chartjs.org/docs/latest/
-
-// my data is :// typical data is ++[ [SCOPE ADC DATACHANNEL1 64 64 64 64 64 64 64 64 64 64] [SCOPE ADC DATACHANNEL2 0 0 0 0 0 0 0 0 0 0]]++
-
-
-const char Chart2[] PROGMEM = R"=====(
-<html>
-<!-- Adding a data chart using Chart.js -->
-<head>
-  <script src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js'></script>
-</head>
-<body onload="javascript:init()">
-<!-- Adding a slider for controlling data rate -->
-<div>
-  <input type="range" min="1" max="10" value="5" id="dataRateSlider" oninput="sendDataRate()" />
-  <label for="dataRateSlider" id="dataRateLabel">Rate: 0.2Hz</label>
-</div>
-<hr />
-<div>
-  <canvas id="line-chart" width="800" height="450"></canvas>
-</div>
-<!-- Adding a websocket to the client (webpage) -->
-<script>
-  var webSocket, dataPlot;
-  var maxDataPoints = 200;
-  function removeData(){
-    dataPlot.data.labels.shift();
-    dataPlot.data.datasets[0].data.shift();
-  }
-  function addData(label, data) {
-    if(dataPlot.data.labels.length > maxDataPoints) removeData();
-    dataPlot.data.labels.push(label);
-    dataPlot.data.datasets[0].data.push(data);
-    dataPlot.update();
-  }
-  function init() {
-    webSocket = new WebSocket('ws://' + window.location.hostname + ':81/');
-    dataPlot = new Chart(document.getElementById("line-chart"), {
-      type: 'line',
-      data: {
-        labels: [],
-        datasets: [{
-          data: [],
-          label: "Temperature (C)",
-          borderColor: "#3e95cd",
-          fill: false
-        }]
-      }
-    });
-    webSocket.onmessage = function(event) {
-      var data = JSON.parse(event.data);
-      console.log(data);   // added dag
-      //var today = new Date();
-      //var t = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
-      //addData(t, data.value);
-    }
-  }
-  function sendDataRate(){
-    var dataRate = document.getElementById("dataRateSlider").value;
-    webSocket.send(dataRate);
-    dataRate = 1.0/dataRate;
-    document.getElementById("dataRateLabel").innerHTML = "Rate: " + dataRate.toFixed(2) + "Hz";
-  }
-</script>
-</body>
-</html>
-)=====";
-
-
 
 static const char PROGMEM STRIP_HTML[] = R"rawliteral(
 <!DOCTYPE html>
@@ -81,6 +11,99 @@ static const char PROGMEM STRIP_HTML[] = R"rawliteral(
     <title> PicoGraphDemo</title>
    // <script src="picograph.js"></script>
  <script>
+ // copied from Original added PS in case of problems
+var wsMessageArray = "";
+var Data2,Data1;
+var lastData2,lastData1;
+
+function GetDataPS() 
+{
+ if(wsMessageArray[1] === "ADC") {
+    if(wsMessageArray[2]==="DUPLEX") {
+
+      if(wsMessageArray.length > 3) { 
+				for(var updatePlotCounter = 3; updatePlotCounter <= (wsMessageArray.length-1); updatePlotCounter++)	{ 
+					Data1 = (parseInt(wsMessageArray[updatePlotCounter]));
+          updatePlotCounter++;
+          Data2 = (parseInt(wsMessageArray[updatePlotCounter]));
+          demograph.update([Data1, Data2]);  
+        }
+			}
+	}
+
+
+	if(wsMessageArray[2]==="DATACHANNEL1") {
+
+		 if(wsMessageArray.length > 3)	{ 
+			 for(var updatePlotCounter = 3; updatePlotCounter <= (wsMessageArray.length-1); updatePlotCounter++)	{ 
+				Data1 = (parseInt(wsMessageArray[updatePlotCounter]));
+                demograph.update([Data1, Data2]);
+            }
+		 }
+	}
+	  
+	if(wsMessageArray[2] === "DATACHANNEL2") {
+
+		if(wsMessageArray.length > 3)		{
+			for(var updatePlotCounter = 3; updatePlotCounter <= (wsMessageArray.length-1); updatePlotCounter++)			{
+				Data2 = (parseInt(wsMessageArray[updatePlotCounter]));
+        //demograph.update([Data1, Data2]);
+      }
+		}
+	}
+ }
+}     
+
+
+ 
+ function startPS()
+    {
+      //websock = new WebSocket('ws://192.168.4.1:81/');
+      websock = new WebSocket('ws://' + window.location.hostname + ':81/');
+      websock.onopen = function(evt)
+      {
+        console.log('websock open');
+        //websock.send("SCOPE CHANNEL 1 SCALES");
+        //websock.send("SCOPE CHANNEL 2 INT ADC");
+        websock.send("SCOPE MSTIMER 400");
+        websock.send("SCOPE CHANNEL 2 OFF");
+        //websock.send("SCOPE CHANNEL 1 DIG");
+        websock.send("SCOPE DUPLEX 1 DIG"); 
+        
+        //websock.send("SCOPE MSTIMER 500");  // note there is somethng wrong with the mstimer  change routines..either in the web interpreter or the html or 
+        // websock.send("SCOPE SPS 1");  // dag note max rate for two scales to be read alternately
+      };
+      websock.onclose = function(evt)
+      {
+        console.log('websock close');
+      };
+      websock.onerror = function(evt)
+      {
+        console.log(evt);
+      };
+      websock.onmessage = function(evt)
+      {
+        console.log(evt);
+        wsMessageArray = evt.data.split(" ");
+        if(wsMessageArray.length >= 2)
+        {
+          if(wsMessageArray[0] === "SCOPE")
+          {
+            GetDataPS();
+          }
+         // if(wsMessageArray[0] === "SERIAL")
+         // {
+         //   serialEventHandler();
+         // }
+        }
+      };
+      //   clearPlot();
+    }
+
+ 
+ 
+ 
+ 
  function byID(id) {
     return document.getElementById(id)
 }
@@ -461,14 +484,14 @@ function colorArray(len) {
 
 </head>
 
-<body style="font-family: Lucida Console, Monaco, monospace;">
+<body onload="javascript:startPS();"  style="font-family: Lucida Console, Monaco, monospace;">
 
     <h1>PicoGraphDemo</h1>
-<a href=/DATA >
-    <!-- Canvas for the graph also click to get to DATA page -->
+<a href=/. >
+    <!-- Canvas for the graph also click to get to previous page -->
     <canvas
         id="graphDemo"
-        style="width: 900px; height:200px; border:2px solid #000000;"
+        style="width: 900px; height:400px; border:2px solid #000000;"
     >
     </canvas>
 </a>
@@ -478,19 +501,22 @@ function colorArray(len) {
     <script>
         /* Create graph using picograph */
         let demograph = createGraph("graphDemo",
-            ["Random Y0", "Random Y1"],
-            "units", "graphLabels", 50, 10, 0, true, true);
+            ["CH1", "CH2"],
+            "units", "graphLabels", 5, 10, 0, true, false);
 
         /* Update values every second */
-        setInterval(updateEverySecond, 1000);
+        setInterval(updateEverySecond, 500);
 
         function updateEverySecond() {
             /* Get new values */
             yrand0 = Math.random() * 10;
             yrand1 = Math.random() * 10;
-
+            GetDataPS();
+            //demograph.update([Data1, Data2]);
+            
+           
             /* Update graph */
-            demograph.update([yrand0, yrand1])
+           // demograph.update([yrand0, yrand1])
         }
 
     </script>

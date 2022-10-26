@@ -20,6 +20,12 @@ String scopeHandler(WebSocketsServer &WEBSOCKETOBJECT);
 void ADCInit(void);
 void setADCChannel(int CHANNEL);
 int ADCRead(void);
+void DUPLEXHandler(void);
+void ADCHandlerold(void);
+long ChannelRead1 (void);
+long ChannelRead2 (void);
+
+
 void ADCHandler(byte chan);
 void ScalesInit(byte Data,byte Clock);
 boolean ScalesConnected(void);

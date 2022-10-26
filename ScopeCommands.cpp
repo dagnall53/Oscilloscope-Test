@@ -120,7 +120,7 @@ void scopeInit(void) {
   channelModeOutput1 = "";
   channelModeOutput2 = "";
   // changed and webserver to defauult to var yPlotScaleFactor = 10;
-
+  setDuplexMode(false);
   setUartScopeData("0");
   ADCInit();
 }
@@ -133,8 +133,13 @@ String scopeHandler(WebSocketsServer& WEBSOCKETOBJECT) {
 
   if ((getChanneMode1() == "4V ADC") || (getChanneMode1() == "64V ADC") || (getChanneMode1() == "INT ADC") || (getChanneMode1() == "DIG") || (getChanneMode1() == "SCALES")) {
     toggledChannelOffFlag1 = false;
-    channelModeOutput1 = "SCOPE ADC DATACHANNEL1";
-    channelModeOutput1 += String(getADCScopeData1());
+    if (getDuplexMode()) {
+      channelModeOutput1 = "SCOPE ADC DUPLEX";
+      channelModeOutput1 += String(getADCScopeData1());  // for now
+    } else {
+      channelModeOutput1 = "SCOPE ADC DATACHANNEL1";
+      channelModeOutput1 += String(getADCScopeData1());
+    }
 
 
     WEBSOCKETOBJECT.broadcastTXT(channelModeOutput1);
@@ -237,6 +242,103 @@ int ADCRead(void) {
     return ADCResult;
   }
 }
+void ADCHandlerold(void) {  // reads BOTH channels and sets the strings
+  if (getDuplexMode()) {
+    addADCScopeData1(String(ChannelRead1(), DEC)); addADCScopeData1(String(ChannelRead2(), DEC));
+  } else {
+    addADCScopeData1(String(ChannelRead1(), DEC));
+    addADCScopeData2(String(ChannelRead2(), DEC));
+  }
+}
+
+void DUPLEXHandler(void) {
+
+  addADCScopeData1(String(ChannelRead1(), DEC));  // will concatenat
+  addADCScopeData1(String(ChannelRead2(), DEC));
+}
+
+long ChannelRead1(void) {
+  long temp;
+  if (getChanneMode1() == "DIG") {
+    if (digitalRead(ScopeDigInput0) == 1) {
+      temp = 128;  // offset!
+    } else {
+      temp = 96;
+    }
+    CH1Scale = 1;
+  }
+  if (getChanneMode1() == "INT ADC") {
+    CH1Scale = 1024 / 3.3;  //3.3v ref, output in mv1024 not 2048
+    temp = (analogRead(0) * 4096 / 64) / CH1Scale;
+  }
+
+  if (getChanneMode1() == "SCALES") {
+    CH1Scale = -100000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V! 209 and 1000 2090 and 100 20900 and 10 here
+    temp = readScales(0);
+    temp = ((temp * 4096 / 64) / CH1Scale) + offset;
+  }
+  if (getChanneMode1() == "SCALESB") {
+    CH1Scale = -25000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V!
+    temp = readScales(1);
+    temp = ((temp * 4096 / 64) / CH1Scale) + offset;
+  }
+  if (getChanneMode1() == "4V ADC") {
+    CH1Scale = 2048 / 4;
+    setADCChannel(0);
+    temp = ((ADCRead() * 4096 / 64) / CH1Scale);
+  }
+  return temp;
+}
+
+long ChannelRead2(void) {
+  long temp;
+ if (getDuplexMode()){  //force an analog read  
+   //if (digitalRead(ScopeDigInput0) == 1) {
+   //   temp = 128;  // offset!
+   // } else {
+   //   temp = 96;
+    //}
+
+
+   // CH2Scale = 1024 / 3.3;  //3.3v ref, output in mv1024 not 2048
+    temp = (analogRead(0)  / 16) ;  // range 
+    return temp;
+ }
+  
+  if (getChanneMode2() == "DIG") {
+    if (digitalRead(ScopeDigInput0) == 1) {
+      temp = 128;  // offset!
+    } else {
+      temp = 96;
+    }
+    CH2Scale = 1;
+  }
+  if (getChanneMode2() == "INT ADC") {
+    CH2Scale = 1024 / 3.3;  //3.3v ref, output in mv1024 not 2048
+    temp = (analogRead(0) * 4096 / 64) / CH1Scale;
+  }
+
+  if (getChanneMode2() == "SCALES") {
+    CH1Scale = -100000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V! 209 and 1000 2090 and 100 20900 and 10 here
+    temp = readScales(0);
+    temp = ((temp * 4096 / 64) / CH1Scale) + offset;
+  }
+  if (getChanneMode2() == "SCALESB") {
+    CH1Scale = -25000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V!
+    temp = readScales(1);
+    temp = ((temp * 4096 / 64) / CH1Scale) + offset;
+  }
+  if (getChanneMode2() == "4V ADC") {
+    CH1Scale = 2048 / 4;
+    setADCChannel(0);
+    temp = ((ADCRead() * 4096 / 64) / CH1Scale);
+  }
+
+
+  return temp;
+}
+
+
 
 
 void ADCHandler(byte chan) {
@@ -359,16 +461,16 @@ void ADCHandler(byte chan) {
     CH1Scale = 1024 / 3.3;  //3.3v ref, output in mv1024 not 2048
     temp = (analogRead(0) * 4096 / 64) / CH1Scale;
     if (getChanneMode1() == "SCALES") {
-      CH1Scale = -100000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V! 
+      CH1Scale = -100000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V!
       temp = readScales(0);
       temp = ((temp * 4096 / 64) / CH1Scale);
       addADCScopeData1(String(temp + offset, DEC));  // add offset here, keeps temp as the actual reading
     }
     if (getChanneMode1() == "INT ADC") {
-         addADCScopeData1(String(temp, DEC));
+      addADCScopeData1(String(temp, DEC));
     }
     if (getChanneMode2() == "INT ADC") {
-        addADCScopeData2(String(temp, DEC));
+      addADCScopeData2(String(temp, DEC));
     }
     if (getChanneMode1() == "DIG") {
       if (D0) {

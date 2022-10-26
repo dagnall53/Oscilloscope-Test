@@ -178,64 +178,99 @@ void loop() {
   ArduinoOTA.handle();
   webSocket.loop();
   server.handleClient();
+  //Original
+  if ((currentTime - oldTimeADC) >= 1) {  // 5ms sample rate
+    //DUPLEXHandler();
+    ADCHandlerold();
+    oldTimeADC = currentTime;
+  }
   if (webSocketData != "") {
     webSocketDataInterpreter(webSocket, webSocketData);
     webSocketData = "";
-    ADCHandler(0);  // do both channels not neat but doing this after a message allows for chs being turned off and updating the web server
-    scopeHandler(webSocket);
   }
-
-  //
-
-
-
-  // READ the ADC etc..
-  if ((getMsTimer() >= 300) && (!ADC1READ) && (((currentTime - LastSampleTime) >= (getMsTimer() / 2)))) {
-    ADCHandler(1);  // Do channels alternately if both ch on and mst timer is long??
-    ADC1READ = true;
-  }
-
-  // if ((currentTime - LastSampleTime) >= getMsTimer())  //get adc values
-  // {
-  //   ADCHandler(3);  // Do D1,D0, ADC channels synchronously  ??
-  //   LastSampleTime = currentTime;
-  //   digitalWrite(D4, PHASE);  //DAG LED flashing
-  //   PHASE = !PHASE;
-  // }
-
-  if ((currentTime - LastSampleTime) >= getMsTimer())  //get adc values
-  {
-    if (!ADC1READ) { ADCHandler(1); }
-    ADCHandler(2);  // Do channels alternately if both ch on and mst timer is long??
-    ADC1READ = false;
-    LastSampleTime = currentTime;
-    digitalWrite(D4, PHASE);  //DAG LED flashing
-    PHASE = !PHASE;
-
-  //if(get_data){
-    // Serial.println(bmp.readTemperature());
-    String json = "{\"value\":";
-    json += "100";
-    json += "}";
-    webSocket.broadcastTXT(json.c_str(), json.length());
-    //get_data = false;
-  //}
-
-
-
-  }
-  ///
-
-  if ((currentTime - oldTime) >= 1000)  //update the screen at ...this  interval
-  {
-    //Serial.print("++[");
-    //Serial.print(scopeHandler(webSocket)); Serial.println("]++");// dag temp test to understand websockets outputs
-    // typical data is ++[ [SCOPE ADC DATACHANNEL1 64 64 64 64 64 64 64 64 64 64] [SCOPE ADC DATACHANNEL2 0 0 0 0 0 0 0 0 0 0]]++
+  if ((currentTime - oldTime) >= getMsTimer()) {
     scopeHandler(webSocket);
     webSocketData = "";
     oldTime = currentTime;
   }
 }
+// Revised
+
+
+
+//   if (webSocketData != "") {
+//     webSocketDataInterpreter(webSocket, webSocketData);
+//     webSocketData = "";
+//     //ADCHandler(0);  // do both channels not neat but doing this after a message allows for chs being turned off and updating the web server
+//     scopeHandler(webSocket);
+//   }
+
+//   if ((getMsTimer() >= 300) && (!ADC1READ) && (((currentTime - LastSampleTime) >= (getMsTimer() / 2)))) {
+//     ADCHandler(1);  // Do channels alternately if both ch on and mst timer is long??
+//     ADC1READ = true;
+//   }
+
+//   // if ((currentTime - LastSampleTime) >= getMsTimer())  //get adc values
+//   // {
+//   //   ADCHandler(3);  // Do D1,D0, ADC channels synchronously  ??
+//   //   LastSampleTime = currentTime;
+//   //   digitalWrite(D4, PHASE);  //DAG LED flashing
+//   //   PHASE = !PHASE;
+//   // }
+
+//   if ((currentTime - LastSampleTime) >= getMsTimer())  //get adc values
+//   {
+//     if (!ADC1READ) { ADCHandler(1); }
+//     ADCHandler(2);  // Do channels alternately if both ch on and mst timer is long??
+//     ADC1READ = false;
+//     LastSampleTime = currentTime;
+//     digitalWrite(D4, PHASE);  //DAG LED flashing
+//     PHASE = !PHASE;
+
+//     //if(get_data){
+//     // Serial.println(bmp.readTemperature());
+//     // String json = "{\"value\":";
+//     // json += "100";
+//     // json += "}";
+//     // webSocket.broadcastTXT(json.c_str(), json.length());
+//     //get_data = false;
+//     //}
+
+//     /*
+//   Above sends: (Apparently for the Chartjs)
+// MessageEvent {isTrusted: true, data: '{"value":100}', origin: 'ws://oscilloscope.local:81', lastEventId: '', source: null, …}
+// HOME:99  (/HOME PAGE)
+// The main one sends this..
+// MessageEvent {isTrusted: true, data: 'SCOPE ADC DATACHANNEL1 0 0 0 0 0 0 0 0 0 0', origin: 'ws://oscilloscope.local:81', lastEventId: '', source: null, …}
+// HOME:99
+
+
+// two inputs active ;
+// MessageEvent {isTrusted: true, data: 'SCOPE ADC DATACHANNEL1 0 0 0 0 0 0 0 0 0 0 0 0 0 0…0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0', origin: 'ws://oscilloscope.local:81', lastEventId: '', source: null, …}
+// HOME:99
+// MessageEvent {isTrusted: true, data: 'SCOPE ADC DATACHANNEL2 32 32 32 32 32 32 32 32 32 …2 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32', origin: 'ws://oscilloscope.local:81', lastEventId: '', source: null, …}
+
+// 5sec repeat
+// MessageEvent {isTrusted: true, data: 'SCOPE ADC DATACHANNEL1 128 128 128 128 128 128 128…8 128 128 128 128 128 128 128 128 128 128 128 128', origin: 'ws://oscilloscope.local:81', lastEventId: '', source: null, …}isTrusted: truebubbles: falsecancelBubble: falsecancelable: falsecomposed: falsecurrentTarget: WebSocket {url: 'ws://oscilloscope.local:81/', readyState: 1, bufferedAmount: 0, onopen: ƒ, onerror: ƒ, …}data: "SCOPE ADC DATACHANNEL1 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 96 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128"defaultPrevented: falseeventPhase: 0lastEventId: ""origin: "ws://oscilloscope.local:81"path: []ports: []returnValue: truesource: nullsrcElement: WebSocket {url: 'ws://oscilloscope.local:81/', readyState: 1, bufferedAmount: 0, onopen: ƒ, onerror: ƒ, …}target: WebSocket {url: 'ws://oscilloscope.local:81/', readyState: 1, bufferedAmount: 0, onopen: ƒ, onerror: ƒ, …}timeStamp: 113385.5type: "message"userActivation: null[[Prototype]]: MessageEvent
+// HOME:99
+// MessageEvent {isTrusted: true, data: 'SCOPE ADC DATACHANNEL2 32 32 32 32 32 32 32 32 32 …2 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32', origin: 'ws://oscilloscope.local:81', lastEventId: '', source: null, …}
+// HOME:99
+
+
+// */
+//   }
+//   ///
+
+//   if ((currentTime - oldTime) >= 5000)  //update the screen at ...this  interval
+//   {
+//     //Serial.print("++[");
+//     //Serial.print(scopeHandler(webSocket)); Serial.println("]++");// dag temp test to understand websockets outputs
+//     // typical data is ++[ [SCOPE ADC DATACHANNEL1 64 64 64 64 64 64 64 64 64 64] [SCOPE ADC DATACHANNEL2 0 0 0 0 0 0 0 0 0 0]]++
+//     scopeHandler(webSocket);
+//     webSocketData = "";
+//     oldTime = currentTime;
+//   }
+
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
   switch (type) {
@@ -268,23 +303,26 @@ void WebserverSetup() {
   server.on("/", handleRoot);
   server.on("/HOME", handleRoot);
   server.on("/DATA", SendDATA);
-  server.on("/TEST", handleTest);
-   server.on("/STRIP", handleStrip);
+  server.on("/data", SendDATA);
+  // server.on("/TEST", handleTest);
+  server.on("/STRIP", handleStrip);
   server.onNotFound(handleNotFound);
   server.begin();
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
 }
+
 void handleRoot() {
   server.send_P(200, "text/html", INDEX_HTML);
 }
 
-void handleTest() {
-  server.send_P(200, "text/html", Chart2);
-}
+// void handleTest() {
+//   server.send_P(200, "text/html", Chart2);
+// }
 void handleStrip() {
   server.send_P(200, "text/html", STRIP_HTML);
 }
+
 void SendDATA() {
   server.sendContent(HTML_DATATEST());
   server.sendContent("");
@@ -303,9 +341,9 @@ String HTML_DATATEST() {
   st += "<br><br>";
   st += "<input style=\"cursor:pointer; font-size:80%;\" type=\"button\" onclick=\"window.location.href ='/HOME'\" value=  HOME ></div>";
   st += "<br><input style=\"cursor:pointer; font-size:80%;\" type=\"button\" onclick=\"window.location.href ='/.'\" value=  Return ></div>";
-  st += "<br><input style=\"cursor:pointer; font-size:80%;\" type=\"button\" onclick=\"window.location.href ='/TEST'\" value= ' Goto TEST HTML - STRIP Chart '></div>";
-    st += "<br><input style=\"cursor:pointer; font-size:80%;\" type=\"button\" onclick=\"window.location.href ='/STRIP'\" value= ' Goto PicoGraph demo Chart '></div>";
- // st += "<br><input style=\"cursor:pointer; font-size:80%;\" type=\"button\" onclick=\"window.location.href ='/SeaTalk1'\" value=  ADDITIONAL_SEATALK1_SETTINGS + ></div>";
+  // st += "<br><input style=\"cursor:pointer; font-size:80%;\" type=\"button\" onclick=\"window.location.href ='/TEST'\" value= ' Goto TEST HTML - STRIP Chart '></div>";
+  st += "<br><input style=\"cursor:pointer; font-size:80%;\" type=\"button\" onclick=\"window.location.href ='/STRIP'\" value= ' Goto PicoGraph demo Chart '></div>";
+  // st += "<br><input style=\"cursor:pointer; font-size:80%;\" type=\"button\" onclick=\"window.location.href ='/SeaTalk1'\" value=  ADDITIONAL_SEATALK1_SETTINGS + ></div>";
 
 
   st += "<br><br>\r\n";
@@ -335,7 +373,7 @@ void handleNotFound() {
   for (uint8_t i = 0; i < server.args(); i++) {
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
   }
- // message += "<input style=\"cursor:pointer; font-size:80%;\" type=\"button\" onclick=\"window.location.href ='/.'\" value=  Return ></div>";
+  // message += "<input style=\"cursor:pointer; font-size:80%;\" type=\"button\" onclick=\"window.location.href ='/.'\" value=  Return ></div>";
   server.send(404, "text/plain", message);
 }
 

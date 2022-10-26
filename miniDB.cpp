@@ -4,6 +4,7 @@ int msTimer;
 bool dataLogFlag;
 bool dataTAREFlag;
 bool uartScopeFlag;
+bool DuplexModeFlag;
 String uartScopeData;
 String adcScopeData1;
 String adcScopeData2;
@@ -66,6 +67,15 @@ bool getUartScopeFlag(void)
 {
   return uartScopeFlag;
 }
+void setDuplexMode( bool Duplex){
+  DuplexModeFlag = Duplex;
+}
+bool getDuplexMode (void)
+{
+  return DuplexModeFlag;
+}
+
+
 void setUartScopeData(String UARTSCOPEDATA)
 {
   uartScopeData += " ";
@@ -88,6 +98,7 @@ void addADCScopeData1(String ADCSCOPEDATA)
   adcScopeData1 += " ";
   adcScopeData1 += ADCSCOPEDATA;
 }
+
 String getADCScopeData1(void)
 {
   return adcScopeData1;
@@ -113,6 +124,10 @@ void clearADCScopeData2(void)
 /////////////////
 //SCOPE PARAMETERS
 /////////////////
+
+
+
+
 void setChannelMode1(String MODE)
 {
   channelMode1 = "";
