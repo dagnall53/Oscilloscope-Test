@@ -135,7 +135,7 @@ String scopeHandler(WebSocketsServer& WEBSOCKETOBJECT) {
     toggledChannelOffFlag1 = false;
     if (getDuplexMode()) {
       channelModeOutput1 = "SCOPE ADC DUPLEX";
-      channelModeOutput1 += String(getADCScopeData1());  // for now
+      channelModeOutput1 += String(getADCScopeData1());  // Scope Data sets both ADC if duplex ?set to ADC in adc + whatever is set in ch 2 
     } else {
       channelModeOutput1 = "SCOPE ADC DATACHANNEL1";
       channelModeOutput1 += String(getADCScopeData1());

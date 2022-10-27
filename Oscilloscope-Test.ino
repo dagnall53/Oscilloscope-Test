@@ -17,8 +17,8 @@
  // This update 13:11 17 August 2017
 
 */
-//#define ShowTimes;
 
+static const uint8_t LED = 16;
 
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiMulti.h>
@@ -45,8 +45,8 @@ String string_in1 = "(D7)";
 String string_in2 = "(D6)";
 byte _SDA = D4;   //05
 byte _SCL = D5;   //04
-byte _Data = D0;  // for hx 711
-byte _Clock = D1;
+byte _Data = D2;  // for hx 711
+byte _Clock = D1;  // hx711
 
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length);
@@ -88,10 +88,10 @@ void BROADCAST(String MSG);
 void setup() {
   SetDigInputs(D_in1, D_in2);
   Serial.begin(115200);
-  pinMode(D4, OUTPUT);
-  digitalWrite(D4, 0);  //DAG Turn on the blue LED
+  pinMode(LED, OUTPUT);
+  digitalWrite(LED, 0);  //DAG Turn on the blue LED
   delay(1000);
-
+  digitalWrite(LED, 1);
   //ScreenUpdate(5000) ;
   //Serial.print(" Set up screen refresh at "); Serial.println (Screen_U_time());
 
@@ -126,7 +126,7 @@ void setup() {
     MDNS.addService("http", "tcp", 80);
     MDNS.addService("ws", "tcp", 81);
   }
-  digitalWrite(D4, 1);  //DAG led OFF?
+  digitalWrite(LED, 1);  //DAG led OFF?
   ArduinoOTA.setHostname("Oscilloscope");
   ArduinoOTA.onStart([]() {
     Serial.println("Start");
@@ -172,8 +172,12 @@ void BROADCAST(String MSG) {
   webSocket.broadcastTXT(MSG);
 }
 
+void LEDFLASH(void) {
+  digitalWrite(LED, PHASE);  //DAG LED flashing
+  PHASE = !PHASE;
+}
+
 void loop() {
-  digitalWrite(D4, PHASE);  //DAG LED flashing
   currentTime = millis();
   serialEvent();
   ArduinoOTA.handle();
@@ -181,15 +185,19 @@ void loop() {
   server.handleClient();
   //Original
   if ((currentTime - oldTimeADC) >= (getsampleuSTimer()/1000) ) {  // 5ms sample rate
-    //DUPLEXHandler();
+    //DUPLEXHandler(); if (getDuplexMode()) {}
+   // Serial.println("ADC Handle");
     ADCHandlerold();
     oldTimeADC = currentTime;
   }
   if (webSocketData != "") {
     webSocketDataInterpreter(webSocket, webSocketData);
+   // Serial.println("Websocket data Handle");
     webSocketData = "";
   }
   if ((currentTime - oldTime) >= getMsTimer() ) {
+    LEDFLASH();
+   // Serial.println("websocket OUT");
     scopeHandler(webSocket);
     webSocketData = "";
     oldTime = currentTime;
@@ -215,7 +223,7 @@ void loop() {
 //   // {
 //   //   ADCHandler(3);  // Do D1,D0, ADC channels synchronously  ??
 //   //   LastSampleTime = currentTime;
-//   //   digitalWrite(D4, PHASE);  //DAG LED flashing
+//   //   digitalWrite(LED, PHASE);  //DAG LED flashing
 //   //   PHASE = !PHASE;
 //   // }
 
@@ -225,7 +233,7 @@ void loop() {
 //     ADCHandler(2);  // Do channels alternately if both ch on and mst timer is long??
 //     ADC1READ = false;
 //     LastSampleTime = currentTime;
-//     digitalWrite(D4, PHASE);  //DAG LED flashing
+//     digitalWrite(LED, PHASE);  //DAG LED flashing
 //     PHASE = !PHASE;
 
 //     //if(get_data){
@@ -294,8 +302,11 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
       // echo data back to browser
       webSocket.sendBIN(num, payload, length);
       break;
+    case WStype_PONG:
+      Serial.printf( "WStype [%d] is PONG\r\n",type );
+      break;
     default:
-      Serial.printf("Invalid WStype [%d]\r\n", type);
+      Serial.printf("Invalid WStype [%d]\r\n", type);  // see http://www.martyncurrey.com/esp8266-and-the-arduino-ide-part-9-websockets/
       break;
   }
 }

@@ -29,8 +29,8 @@ int getsampleuSTimer (void){
 void setMsTimer(int TIME)
 {
   String  MSGdata ;
-	msTimer = TIME; 
-  Serial.print(" Setting msTimer to:");
+	msTimer = TIME ; 
+  Serial.print(" Setting Scope screen update Timer to:");
   Serial.print(msTimer);
   Serial.println("ms");
 
@@ -42,8 +42,8 @@ void setMsTimer(int TIME)
 }
 int getMsTimer(void)   // now is the update rate for the Websock send  
 {
-  if (msTimer > 1000){return 1000;}  // limit update slowness to one per second
-	return msTimer;
+  if (msTimer > 1000) {return 1000;}  // limit update slowness to one update per 10 second
+	return msTimer;  // ten samples updates per screen width (perhaps update later to account for multiplier)
 }
 
 /////////////////
@@ -81,6 +81,8 @@ bool getUartScopeFlag(void)
   return uartScopeFlag;
 }
 void setDuplexMode( bool Duplex){
+ if (Duplex) {Serial.println(" Setting Duplex Mode");}
+ else {Serial.println(" Clearing Duplex Mode");}
   DuplexModeFlag = Duplex;
 }
 bool getDuplexMode (void)

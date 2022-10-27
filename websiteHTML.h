@@ -48,7 +48,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
      var currentmst=10;
      var currentuSTimer  = 5000;
     var xPlotPositionStep = 10;  //DAG is used as delta t in plot in scope 
-    var xPlotTotalTimeMax = 2;   // 10 sec screen 
+    
     var xPlotTotalTime = 10; 
     var yPlotMax = 64;           // DAG Scope display is basically set up for 2048 INPUT = 64 v
     var channelIncomingYPlotPosition1 = 0;
@@ -75,6 +75,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     var PlotStraightLine=false;
     
     function start()
+    
     {
       //websock = new WebSocket('ws://192.168.4.1:81/');
       websock = new WebSocket('ws://' + window.location.hostname + ':81/');
@@ -82,14 +83,14 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       {
         console.log('websock open');
         websock.send("SCOPE CHANNEL 1 INT ADC"); 
-        xPlotTotalTimeMax=2;   // 2 sec screen  s
-        sampleuSTimer= 3000;  // 3ms samples see above 
-        xPlotSamplesPerSecond = 1000000 / sampleuSTimer;       
+        xPlotTotalTimeMax=2;   // 2 sec screen  
       //websock.send("SCOPE CHANNEL 1 SCALES");
-        websock.send("SCOPE CHANNEL 2 OFF"); 
-        //UpdateMST(xPlotTotalTimeMax,sampleuSTimer); // will update mstimer / sampleuSTimerto defaults
-        //websock.send("SCOPE MSTIMER 5");     // 
+        websock.send("SCOPE CHANNEL 2 DIG"); 
+      //UpdateMST(xPlotTotalTimeMax,sampleuSTimer); // will update mstimer / sampleuSTimerto defaults
+        UpdateMST(10,5000); // Set websocks update and adc sample timers 
+        //websock.send("SCOPE MSTIMER 200");     // 
         //websock.send("SCOPE Sample_uS 5000");  // dag note max rate for two scales to be read alternately
+       websock.send("Function Start completed "); 
       };
       websock.onclose = function(evt)
       {
@@ -235,6 +236,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
           data2send = "Updated msTimer (scope width in seconds) to:   ";
           data2send += xPlotTotalTimeMax;
           websock.send(data2send);
+          websock.send(" line 239 MSTIMER set xplottotal time ");
           clearPlot();
         }
       }
@@ -289,19 +291,6 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
           yPlotMax = parseInt(wsMessageArray[3]);
           clearPlot();
         } 
-        if(wsMessageArray[2] === "Sample_uS")
-        {     
-          sampleuSTimer = parseInt(wsMessageArray[3]); 
-          xPlotSamplesPerSecond = 1000000 / sampleuSTimer;
-          // in clear plot UpdateMST(xPlotTotalTimeMax,sampleuSTimer);
-          clearPlot();
-        }
-        if(wsMessageArray[2] === "MSTIMER")
-        {     
-          xPlotTotalTimeMax = parseInt(wsMessageArray[3]);
-          //UpdateMST(xPlotTotalTimeMax,sampleuSTimer); 
-          clearPlot();
-        }
       }
     }
     function UpdateMST(currentmst , currentuSTimer) {  // update scope plot dimensions / sample times tim
@@ -323,8 +312,9 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       //  changed = true;
         data2send="";
         data2send = "SCOPE MSTIMER ";
-        data2send += xPlotTotalTimeMax;
+        data2send += xPlotTotalTimeMax *1000;  // send ms
        websock.send(data2send);
+       websock.send(" line 329 MSTIMER set xplottotal time ");
       }
       xPlotSamplesPerSecond = 1000000 / sampleuSTimer;      
     }
@@ -611,7 +601,11 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     function changeTimeScale()
     { 
       xPlotTotalTimeMax = document.getElementById("timescaleSelectElement").value;
-      //UpdateMST(xPlotTotalTimeMax,sampleuSTimer);
+        data2send="";
+        data2send = "SCOPE MSTIMER ";
+        data2send += (xPlotTotalTimeMax *1000);  // send ms
+       websock.send(data2send);
+       websock.send(" line 620 MSTIMER set xplottotal time ");
       clearPlot();
     }
 

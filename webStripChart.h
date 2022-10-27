@@ -9,9 +9,9 @@ static const char PROGMEM STRIP_HTML[] = R"rawliteral(
 
 <head>
     <title> PicoGraphDemo</title>
-   // <script src="picograph.js"></script>
+ 
  <script>
- // copied from Original added PS in case of problems
+ // copied from Original picograph added PS in case of problems
 var wsMessageArray = "";
 var Data2,Data1;
 var lastData2,lastData1;
@@ -20,14 +20,13 @@ function GetDataPS()
 {
  if(wsMessageArray[1] === "ADC") {
     if(wsMessageArray[2]==="DUPLEX") {
-
       if(wsMessageArray.length > 3) { 
 				for(var updatePlotCounter = 3; updatePlotCounter <= (wsMessageArray.length-1); updatePlotCounter++)	{ 
 					Data1 = (parseInt(wsMessageArray[updatePlotCounter]));
           updatePlotCounter++;
           Data2 = (parseInt(wsMessageArray[updatePlotCounter]));
           demograph.update([Data1, Data2]);  
-        }
+         }
 			}
 	}
 
@@ -63,15 +62,13 @@ function GetDataPS()
       websock.onopen = function(evt)
       {
         console.log('websock open');
-        //websock.send("SCOPE CHANNEL 1 SCALES");
-        //websock.send("SCOPE CHANNEL 2 INT ADC");
-        websock.send("SCOPE MSTIMER 2000");
-        websock.send("SCOPE CHANNEL 2 OFF");
-        //websock.send("SCOPE CHANNEL 1 DIG");
-        websock.send("SCOPE DUPLEX 1 DIG"); 
-        
-        //websock.send("SCOPE MSTIMER 500");  // note there is somethng wrong with the mstimer  change routines..either in the web interpreter or the html or 
-        websock.send("SCOPE Sample_uS 100000");  // dag note max rate for two scales to be read alternately
+        websock.send("PicoGraph setup started"); 
+        websock.send("SCOPE DUPLEX 1 int ADC"); // set duplex and ch 1 = int adc
+        websock.send("SCOPE CHANNEL 2 DIG");    // set ch2 = dig  
+ 
+        websock.send("SCOPE MSTIMER 500");  // update rate ? fast to avoid interval timer time out
+        websock.send("SCOPE Sample_uS 2000");  // dag note max rate for two scales to be read alternately
+        websock.send("PicoGraph setup Finished"); 
       };
       websock.onclose = function(evt)
       {
@@ -97,7 +94,7 @@ function GetDataPS()
          // }
         }
       };
-      //   clearPlot();
+      
     }
 
  
@@ -504,8 +501,8 @@ function colorArray(len) {
             ["CH1", "CH2"],
             "units", "graphLabels", 5, 10, 0, true, false);
 
-        /* Update values every second */
-        setInterval(updateEverySecond, 500);
+        /* Update values every xxxx ms */
+         setInterval(GetDataPS, 100);
 
         function updateEverySecond() {
             /* Get new values */
