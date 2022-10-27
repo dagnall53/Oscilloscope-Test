@@ -42,8 +42,10 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     var yPlotOldPosition2 = 0;
      var yPlotScaleFactor = 10;   // DAG nb setting a different start point
      var xPlotScaleFactor = 1;
-     var xPlotmSTimer = 2000;  // more correctly single channel sample interval timer 
+     var xPlotmSTimer = 2000;  // ms for screen more correctly single channel sample interval timer 
+     var sampleuSTimer =5000;  // us for samples
      var currentmst=10;
+     var currentuSTimer  = 5000;
      var xPlotPositionStep = 10;  //DAG is used as delta t in plot in scope calculated later from xPlotmSTimer etc.... 
     var xPlotTotalTimeMax = 10;
     var xPlotTotalTime = 10; 
@@ -79,12 +81,13 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       {
         console.log('websock open');
         websock.send("SCOPE CHANNEL 1 INT ADC"); 
-       xPlotmSTimer=100000;   // set "wrong" so UpdateMST will send "correct" value
+        xPlotmSTimer=100000;   // set "wrong" so UpdateMST will send "correct" value to esp
+        sampleuSTimer= 10000;  // see above        
       //websock.send("SCOPE CHANNEL 1 SCALES");
         websock.send("SCOPE CHANNEL 2 OFF"); 
-        UpdateMST(xPlotmSTimer); // will update mstimer
-        //websock.send("SCOPE MSTIMER 500");  // note there is somethng wrong with the mstimer  change routines..either in the web interpreter or the html or 
-       // websock.send("SCOPE SPS 1");  // dag note max rate for two scales to be read alternately
+        UpdateMST(xPlotmSTimer,sampleuSTimer); // will update mstimer / sampleuSTimerto defaults
+        //websock.send("SCOPE MSTIMER 500");     // 
+        //websock.send("SCOPE Sample_uS 5000");  // dag note max rate for two scales to be read alternately
       };
       websock.onclose = function(evt)
       {
@@ -122,21 +125,6 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
             dataChannelOnFlag1 = true;
       if(wsMessageArray.length > 3)
       { 
-       // if(PlotEdgeReached)   {  
-       //   clearPlot();    
-       //   PlotStraightLine=true   ;// should trigger drawstraightline in update plot's first stroke only  
-       // }
-       // else{
-            
-             // we add blank plot space to account for missing adc samples during the websocket data send
-       
-       //     MissingSteps=(200/xPlotmSTimer)*xPlotPositionStep; // 200ms is the websocket update dropout in the esp code
-       //     xPlotOldPosition += MissingSteps; 
-       //     xPlotOldPosition2 +=MissingSteps;
-       //     xPlotCurrentPosition +=MissingSteps;
-       //     xPlotCurrentPosition2 +=MissingSteps; 
-       //     PlotStraightLine=true   ;// should trigger drawstraightline in update plot's first stroke only 
-       //    }   
        for(var updatePlotCounter = 3; updatePlotCounter <= (wsMessageArray.length-1); updatePlotCounter++)
            { 
              updatePlot(parseInt(wsMessageArray[updatePlotCounter]));
@@ -226,18 +214,22 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
           yPlotMax = parseInt(wsMessageArray[3]);
           clearPlot();
         }
-        if(wsMessageArray[2] === "SPS")
+        if(wsMessageArray[2] === "Sample_uS")
         {     
-          xPlotmSTimer = 1000/parseInt(wsMessageArray[3]); 
+          sampleuSTimer = parseInt(wsMessageArray[3]); 
+          data2send="";
+          data2send = "Updated sampleuSTimer to:   ";
+          data2send += sampleuSTimer;
+          websock.send(data2send);
           clearPlot();
         }
         if(wsMessageArray[2] === "MSTIMER")
         {     
           xPlotmSTimer = parseInt(wsMessageArray[3]); 
-        data2send="";
-        data2send = "Updated mst to:   ";
-        data2send += xPlotmSTimer;
-        websock.send(data2send);
+          data2send="";
+          data2send = "Updated msTimer to:   ";
+          data2send += xPlotmSTimer;
+          websock.send(data2send);
           clearPlot();
         }
       }
@@ -292,9 +284,9 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
           yPlotMax = parseInt(wsMessageArray[3]);
           clearPlot();
         } 
-        if(wsMessageArray[2] === "SPS")
+        if(wsMessageArray[2] === "Sample_uS")
         {     
-          xPlotmSTimer = 1000/parseInt(wsMessageArray[3]); 
+          sampleuSTimer = parseInt(wsMessageArray[3]); 
           clearPlot();
         }
         if(wsMessageArray[2] === "MSTIMER")
@@ -304,24 +296,26 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         }
       }
     }
-    function UpdateMST(currentmst)
-    {
-    xPlotmSTimer=3   
-     if ((document.getElementById("channelSelectElement1").value==="SCALES")||(document.getElementById("channelSelectElement2").value==="SCALES"))
-     {
-      xPlotmSTimer =100
-    if ( (document.getElementById("channelSelectElement2").value==="SCALESB")&& (document.getElementById("channelSelectElement1").value==="SCALES") )
-    {
-      xPlotmSTimer = 1500;}
-    }
-     if (currentmst!=xPlotmSTimer)
-     {
+  function UpdateMST(currentmst , currentuSTimer) {  // update scope plot dimensions
+      xPlotmSTimer=2000;   // default 2 sec update 
+      sampleuSTimer = 3000; // default 3mS
+      if (     (document.getElementById("channelSelectElement1").value==="SCALES") || (document.getElementById("channelSelectElement2").value==="SCALES") || (document.getElementById("channelSelectElement2").value==="SCALESB") || (document.getElementById("channelSelectElement1").value==="SCALES")  ) {
+        xPlotmSTimer = 2000;      // 2 sec plot
+        sampleuSTimer = 100000;  // 100ms sample
+      }
+      if (currentuSTimer!=sampleuSTimer) {
+        data2send="";
+        data2send = "SCOPE Sample_uS ";
+        data2send += sampleuSTimer;
+        websock.send(data2send);
+      }
+      if (currentmst!=xPlotmSTimer) {
         data2send="";
         data2send = "SCOPE MSTIMER ";
         data2send += xPlotmSTimer;
-        websock.send(data2send);
-     }
-   }
+       websock.send(data2send);
+      }
+    }
     function adjustCanvas()
     {
       var currentClientWidth = (document.documentElement.clientWidth);
@@ -339,7 +333,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
 
     function clearPlot()
     {        
-      UpdateMST(xPlotmSTimer);
+      UpdateMST(xPlotmSTimer,sampleuSTimer);
       var plotElementID = document.getElementById("plotElement");
       var pctx = plotElementID.getContext("2d"); 
       xPlotPositionStep = (((plotCanvasWidth * xPlotmSTimer)/ (xPlotTotalTimeMax * xPlotScaleFactor))/1000); //DAG modified and using mstimer   
@@ -1010,8 +1004,10 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
           <option value="5">5X</option>
           <option value="10">10X</option>
           <option value="20">20X</option>
+          <option value="100">100X</option>
           </select> </div>
       <div style="width: 100%; height:12.5vh; margin-top:2.5vh;"> <span style="width: 100%; height:2.5vh;">Max X Scale</span> <select id="timescaleSelectElement" onchange="changeTimeScale();" style="display:block; -webkit-appearance: none; box-sizing: content-box; width: 70%; height:10vh; background-color: #E87D75; color:white; border:0; border-radius: 5px; text-align:center; text-align-last:center; margin-left:15%;">
+          <option value="1" >1s</option>
           <option value="2" >2s</option>
           <option value="10" selected="selected">10s</option>
           <option value="20">20s</option>

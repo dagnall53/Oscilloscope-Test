@@ -65,13 +65,13 @@ function GetDataPS()
         console.log('websock open');
         //websock.send("SCOPE CHANNEL 1 SCALES");
         //websock.send("SCOPE CHANNEL 2 INT ADC");
-        websock.send("SCOPE MSTIMER 400");
+        websock.send("SCOPE MSTIMER 2000");
         websock.send("SCOPE CHANNEL 2 OFF");
         //websock.send("SCOPE CHANNEL 1 DIG");
         websock.send("SCOPE DUPLEX 1 DIG"); 
         
         //websock.send("SCOPE MSTIMER 500");  // note there is somethng wrong with the mstimer  change routines..either in the web interpreter or the html or 
-        // websock.send("SCOPE SPS 1");  // dag note max rate for two scales to be read alternately
+        websock.send("SCOPE Sample_uS 100000");  // dag note max rate for two scales to be read alternately
       };
       websock.onclose = function(evt)
       {

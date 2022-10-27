@@ -65,14 +65,14 @@ void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKE
     if(scopeCommand.startsWith("MSTIMER"))
     {
       //Look at start of line for subtokens, add +1 to length to account for space
-      subLevelToken = "MSTIMER";  //DAG NB this is not the scope "timescale", but is the ms delay between samples..
+      subLevelToken = "MSTIMER";  //DAG the scope "timescale"
       setMsTimer(scopeCommand.substring(subLevelToken.length()+1).toInt());
     }
-    if(scopeCommand.startsWith("SPS"))
+    if(scopeCommand.startsWith("Sample_uS"))
     {
       //Look at start of line for subtokens, add +1 to length to account for space
-      subLevelToken = "SPS";  //DAG added to directly set SPS
-      setMsTimer(1000/(scopeCommand.substring(subLevelToken.length()+1).toInt()));
+      subLevelToken = "Sample_uS";  //DAG added to directly set Sample_uS 
+      setsampleuSTimer(scopeCommand.substring(subLevelToken.length()+1).toInt());
     }
     if(scopeCommand.startsWith("DATALOG"))
     {

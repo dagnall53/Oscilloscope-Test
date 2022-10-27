@@ -151,6 +151,7 @@ void setup() {
   Wire.begin(_SDA, _SCL);
   scopeInit();
   setMsTimer(500);  // initial  lazy flash timer for scope sampling rate timebase gets reset when pc connects html
+  setsampleuSTimer(5000);  //us = 5ms
   SetScalesConnected(0);
   currentTime = millis();
   LastSampleTime = currentTime;
@@ -179,7 +180,7 @@ void loop() {
   webSocket.loop();
   server.handleClient();
   //Original
-  if ((currentTime - oldTimeADC) >= 1) {  // 5ms sample rate
+  if ((currentTime - oldTimeADC) >= (getsampleuSTimer()/1000) ) {  // 5ms sample rate
     //DUPLEXHandler();
     ADCHandlerold();
     oldTimeADC = currentTime;
@@ -188,7 +189,7 @@ void loop() {
     webSocketDataInterpreter(webSocket, webSocketData);
     webSocketData = "";
   }
-  if ((currentTime - oldTime) >= getMsTimer()) {
+  if ((currentTime - oldTime) >= getMsTimer() ) {
     scopeHandler(webSocket);
     webSocketData = "";
     oldTime = currentTime;

@@ -5,6 +5,9 @@ void BROADCAST(String MSG);
 void setMsTimer(int TIME);
 int getMsTimer(void);
 
+void setsampleuSTimer (int PERIOD);
+int getsampleuSTimer (void);
+
 //DATA LOG FLAG
 void setDataLog(bool LOG);
 bool getDataLog(void);

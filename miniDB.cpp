@@ -1,6 +1,6 @@
 #include "miniDB.h"
 
-int msTimer;
+int msTimer,sampleuSTimer;
 bool dataLogFlag;
 bool dataTAREFlag;
 bool uartScopeFlag;
@@ -14,6 +14,18 @@ String channelMode2;
 /////////////////
 //TIMER VARIABLE
 /////////////////
+void setsampleuSTimer (int TIME){
+  sampleuSTimer = TIME;
+  Serial.print(" Setting sample timer to:");
+  Serial.print(sampleuSTimer);
+  Serial.println(" uS");
+}
+int getsampleuSTimer (void){
+  return sampleuSTimer;
+}
+
+
+
 void setMsTimer(int TIME)
 {
   String  MSGdata ;
