@@ -2,8 +2,8 @@
 
 //TIMER VARIABLE
 void BROADCAST(String MSG); 
-void setMsTimer(int TIME);
-int getMsTimer(void);
+void setWS_Timer(int TIME);
+int getWS_Timer(void);
 
 void setsampleuSTimer (int PERIOD);
 int getsampleuSTimer (void);

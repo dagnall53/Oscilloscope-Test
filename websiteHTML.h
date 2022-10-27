@@ -43,7 +43,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
      var yPlotScaleFactor = 10;   // DAG nb setting a different start point
      var xPlotScaleFactor = 1;
      var xPlotTotalTimeMax =2;
-     //var xPlotmSTimer = 2000;  // 
+     //var xPlotWS_Timer = 2000;  // 
      var sampleuSTimer =5000;  // us for samples
      var xPlotSamplesPerSecond = 200; // 
      var currentmst=10;
@@ -87,9 +87,9 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         xPlotTotalTimeMax=2;   // 2 sec screen  
       //websock.send("SCOPE CHANNEL 1 SCALES");
         websock.send("SCOPE CHANNEL 2 DIG"); 
-      //UpdateMST(xPlotTotalTimeMax,sampleuSTimer); // will update mstimer / sampleuSTimerto defaults
+      //UpdateMST(xPlotTotalTimeMax,sampleuSTimer); // will update WS_Timer / sampleuSTimerto defaults
         UpdateMST(10,5000); // Set websocks update and adc sample timers 
-        //websock.send("SCOPE MSTIMER 200");     // 
+        //websock.send("SCOPE WS_Timer 200");     // 
         //websock.send("SCOPE Sample_uS 5000");  // dag note max rate for two scales to be read alternately
        websock.send("Function Start completed "); 
       };
@@ -229,15 +229,15 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
           websock.send(data2send);
           clearPlot();
         }
-        if(wsMessageArray[2] === "MSTIMER")
+        if(wsMessageArray[2] === "WS_Timer")
         {     
           xPlotTotalTimeMax = parseInt(wsMessageArray[3]); 
 
           data2send="";
-          data2send = "Updated msTimer (scope width in seconds) to:   ";
+          data2send = "Updated WS_Timer (scope width in seconds) to:   ";
           data2send += xPlotTotalTimeMax;
           websock.send(data2send);
-          websock.send(" line 239 MSTIMER set xplottotal time ");
+          websock.send(" line 239 WS_Timer set xplottotal time ");
           clearPlot();
         }
       }
@@ -312,10 +312,10 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       if (currentmst!=xPlotTotalTimeMax) {
       //  changed = true;
         data2send="";
-        data2send = "SCOPE MSTIMER ";
+        data2send = "SCOPE WS_Timer ";
         data2send += xPlotTotalTimeMax *1000;  // send ms
        websock.send(data2send);
-       websock.send(" line 329 MSTIMER set xplottotal time ");
+       websock.send(" line 329 WS_Timer set xplottotal time ");
       }
       xPlotSamplesPerSecond = 1000000 / sampleuSTimer;      
     }
@@ -339,7 +339,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       UpdateMST(xPlotTotalTimeMax,sampleuSTimer);
       var plotElementID = document.getElementById("plotElement");
       var pctx = plotElementID.getContext("2d"); 
-     // xPlotPositionStep = (((plotCanvasWidth * xPlotTotalTimeMax)/ (xPlotTotalTimeMax * xPlotScaleFactor))/1000); //DAG modified and using mstimer   
+     // xPlotPositionStep = (((plotCanvasWidth * xPlotTotalTimeMax)/ (xPlotTotalTimeMax * xPlotScaleFactor))/1000); //DAG modified and using WS_Timer   
       //xPlotPositionStep = (((plotCanvasWidth * xPlotTotalTimeMax)/ (xPlotTotalTimeMax * xPlotScaleFactor))/1000); //DAG for scope screen size again    
       xPlotPositionStep = plotCanvasWidth / (xPlotTotalTimeMax * xPlotSamplesPerSecond * xPlotScaleFactor); //original
       pctx.fillStyle = "white";
@@ -419,8 +419,8 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
           if (FirstAfterCLS === 0){
         //    websock.send("CH1 rx first");
           FirstAfterCLS=1;
-         // xPlotOldPosition2=(xPlotOldPosition2+ (xPlotPositionStep/2));          //offset other channel by half mstimer timestep  ???
-         // xPlotCurrentPosition2=(xPlotCurrentPosition2+ (xPlotPositionStep/2)); //offset other channel by half mstimer timestep  ????
+         // xPlotOldPosition2=(xPlotOldPosition2+ (xPlotPositionStep/2));          //offset other channel by half WS_Timer timestep  ???
+         // xPlotCurrentPosition2=(xPlotCurrentPosition2+ (xPlotPositionStep/2)); //offset other channel by half WS_Timer timestep  ????
           }
           channelIncomingYPlotPosition1 = incomingYPlotPosition;
           
@@ -603,10 +603,10 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     { 
       xPlotTotalTimeMax = document.getElementById("timescaleSelectElement").value;
         data2send="";
-        data2send = "SCOPE MSTIMER ";
+        data2send = "SCOPE WS_Timer ";
         data2send += (xPlotTotalTimeMax *1000);  // send ms
        websock.send(data2send);
-       websock.send(" line 620 MSTIMER set xplottotal time ");
+       websock.send(" line 620 WS_Timer set xplottotal time ");
       clearPlot();
     }
 

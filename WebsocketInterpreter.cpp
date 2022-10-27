@@ -62,11 +62,11 @@ void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKE
     }
     
     
-    if(scopeCommand.startsWith("MSTIMER"))
+    if(scopeCommand.startsWith("WS_Timer"))
     {
       //Look at start of line for subtokens, add +1 to length to account for space
-      subLevelToken = "MSTIMER";  //DAG the scope "timescale"
-      setMsTimer(scopeCommand.substring(subLevelToken.length()+1).toInt());
+      subLevelToken = "WS_Timer";  //DAG the scope "timescale"
+      setWS_Timer(scopeCommand.substring(subLevelToken.length()+1).toInt());
     }
     if(scopeCommand.startsWith("Sample_uS"))
     {

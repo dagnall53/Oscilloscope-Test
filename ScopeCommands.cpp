@@ -294,19 +294,6 @@ long ChannelRead1(void) {
 
 long ChannelRead2(void) {
   long temp;
- if (getDuplexMode()){  //force an analog read  
-   //if (digitalRead(ScopeDigInput0) == 1) {
-   //   temp = 128;  // offset!
-   // } else {
-   //   temp = 96;
-    //}
-
-
-   // CH2Scale = 1024 / 3.3;  //3.3v ref, output in mv1024 not 2048
-    temp = (analogRead(0)  / 16) ;  // range 
-    return temp;
- }
-  
   if (getChanneMode2() == "DIG") {
     if (digitalRead(ScopeDigInput0) == 1) {
       temp = 128;  // offset!

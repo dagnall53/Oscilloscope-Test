@@ -150,7 +150,7 @@ void setup() {
 
   Wire.begin(_SDA, _SCL);
   scopeInit();
-  setMsTimer(500);  // initial  lazy flash timer for scope sampling rate timebase gets reset when pc connects html
+  setWS_Timer(500);  // initial  lazy flash timer for scope sampling rate timebase gets reset when pc connects html
   setsampleuSTimer(5000);  //us = 5ms
   SetScalesConnected(0);
   currentTime = millis();
@@ -195,7 +195,7 @@ void loop() {
    // Serial.println("Websocket data Handle");
     webSocketData = "";
   }
-  if ((currentTime - oldTime) >= getMsTimer() ) {
+  if ((currentTime - oldTime) >= getWS_Timer() ) {
     LEDFLASH();
    // Serial.println("websocket OUT");
     scopeHandler(webSocket);
@@ -214,12 +214,12 @@ void loop() {
 //     scopeHandler(webSocket);
 //   }
 
-//   if ((getMsTimer() >= 300) && (!ADC1READ) && (((currentTime - LastSampleTime) >= (getMsTimer() / 2)))) {
+//   if ((getWS_Timer() >= 300) && (!ADC1READ) && (((currentTime - LastSampleTime) >= (getWS_Timer() / 2)))) {
 //     ADCHandler(1);  // Do channels alternately if both ch on and mst timer is long??
 //     ADC1READ = true;
 //   }
 
-//   // if ((currentTime - LastSampleTime) >= getMsTimer())  //get adc values
+//   // if ((currentTime - LastSampleTime) >= getWS_Timer())  //get adc values
 //   // {
 //   //   ADCHandler(3);  // Do D1,D0, ADC channels synchronously  ??
 //   //   LastSampleTime = currentTime;
@@ -227,7 +227,7 @@ void loop() {
 //   //   PHASE = !PHASE;
 //   // }
 
-//   if ((currentTime - LastSampleTime) >= getMsTimer())  //get adc values
+//   if ((currentTime - LastSampleTime) >= getWS_Timer())  //get adc values
 //   {
 //     if (!ADC1READ) { ADCHandler(1); }
 //     ADCHandler(2);  // Do channels alternately if both ch on and mst timer is long??

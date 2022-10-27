@@ -1,6 +1,6 @@
 #include "miniDB.h"
 
-int msTimer,sampleuSTimer;
+int WS_Timer,sampleuSTimer;
 bool dataLogFlag;
 bool dataTAREFlag;
 bool uartScopeFlag;
@@ -26,24 +26,24 @@ int getsampleuSTimer (void){
 
 
 
-void setMsTimer(int TIME)
+void setWS_Timer(int TIME)
 {
   String  MSGdata ;
-	msTimer = TIME ; 
+	WS_Timer = TIME ; 
   Serial.print(" Setting Websockets update Timer to:");
-  Serial.print(msTimer);
+  Serial.print(WS_Timer);
   Serial.println("ms");
 
- //  MSGdata = "SCOPE MSTIMER ";  // if the html decided what the mtimer, i, I think we do not need to send it a copy back 
- //  MSGdata += String ( getMsTimer(),DEC);    //Samples per second are 1000/ mstimer.
+ //  MSGdata = "SCOPE WS_Timer ";  // if the html decided what the mtimer, i, I think we do not need to send it a copy back 
+ //  MSGdata += String ( getWS_Timer(),DEC);    //Samples per second are 1000/ WS_Timer.
  //   BROADCAST(MSGdata);
- //   Serial.print("...updated msTimer , sending:");
+ //   Serial.print("...updated WS_Timer , sending:");
  //   Serial.println(MSGdata);
 }
-int getMsTimer(void)   // now is the update rate for the Websock send  
+int getWS_Timer(void)   // now is the update rate for the Websock send  
 {
-  if (msTimer > 1000) {return 1000;}  // limit update slowness to one update per 10 second
-	return msTimer;  // ten samples updates per screen width (perhaps update later to account for multiplier)
+  if (WS_Timer > 1000) {return 1000;}  // limit update slowness to one update per 10 second
+	return WS_Timer;  // ten samples updates per screen width (perhaps update later to account for multiplier)
 }
 
 /////////////////

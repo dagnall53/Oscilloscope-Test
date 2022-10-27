@@ -31,7 +31,7 @@ var lastData2,lastData1;
         
         websock.send("SCOPE CHANNEL 2 DIG");    // set ch2 = dig  // set first!
         websock.send("SCOPE DUPLEX 1 int ADC"); // set duplex and ch 1 = int adc
-        websock.send("SCOPE MSTIMER 100");  // update rate ? fast to avoid getdataps interval timer time out
+        websock.send("SCOPE WS_Timer 100");  // update rate ? fast to avoid getdataps interval timer time out
         websock.send("SCOPE Sample_uS 3000");  // dag note max rate for two scales to be read alternately
         websock.send("PicoGraph setup Finished"); 
       };
