@@ -42,12 +42,13 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     var yPlotOldPosition2 = 0;
      var yPlotScaleFactor = 10;   // DAG nb setting a different start point
      var xPlotScaleFactor = 1;
-     var xPlotmSTimer = 2000;  // ms for screen more correctly single channel sample interval timer 
+     var xPlotmSTimer = 2000;  // 
      var sampleuSTimer =5000;  // us for samples
+     var xPlotSamplesPerSecond = 200; // 
      var currentmst=10;
      var currentuSTimer  = 5000;
-     var xPlotPositionStep = 10;  //DAG is used as delta t in plot in scope calculated later from xPlotmSTimer etc.... 
-    var xPlotTotalTimeMax = 10;
+    var xPlotPositionStep = 10;  //DAG is used as delta t in plot in scope 
+    var xPlotTotalTimeMax = 10;   // 10 sec screen 
     var xPlotTotalTime = 10; 
     var yPlotMax = 64;           // DAG Scope display is basically set up for 2048 INPUT = 64 v
     var channelIncomingYPlotPosition1 = 0;
@@ -81,8 +82,9 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       {
         console.log('websock open');
         websock.send("SCOPE CHANNEL 1 INT ADC"); 
-        xPlotmSTimer=100000;   // set "wrong" so UpdateMST will send "correct" value to esp
-        sampleuSTimer= 10000;  // see above        
+        xPlotmSTimer=2000;   // 2 sec screen  set "wrong" so UpdateMST will send "correct" value to esp
+        sampleuSTimer= 3000;  // 3ms samples see above 
+        xPlotSamplesPerSecond = 1000000 / sampleuSTimer;       
       //websock.send("SCOPE CHANNEL 1 SCALES");
         websock.send("SCOPE CHANNEL 2 OFF"); 
         UpdateMST(xPlotmSTimer,sampleuSTimer); // will update mstimer / sampleuSTimerto defaults
@@ -217,6 +219,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         if(wsMessageArray[2] === "Sample_uS")
         {     
           sampleuSTimer = parseInt(wsMessageArray[3]); 
+          xPlotSamplesPerSecond = 1000000 / sampleuSTimer;
           data2send="";
           data2send = "Updated sampleuSTimer to:   ";
           data2send += sampleuSTimer;
@@ -287,6 +290,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         if(wsMessageArray[2] === "Sample_uS")
         {     
           sampleuSTimer = parseInt(wsMessageArray[3]); 
+          xPlotSamplesPerSecond = 1000000 / sampleuSTimer;
           clearPlot();
         }
         if(wsMessageArray[2] === "MSTIMER")
@@ -299,9 +303,11 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
   function UpdateMST(currentmst , currentuSTimer) {  // update scope plot dimensions
       xPlotmSTimer=2000;   // default 2 sec update 
       sampleuSTimer = 3000; // default 3mS
+      xPlotSamplesPerSecond = 1000000 / sampleuSTimer;
       if (     (document.getElementById("channelSelectElement1").value==="SCALES") || (document.getElementById("channelSelectElement2").value==="SCALES") || (document.getElementById("channelSelectElement2").value==="SCALESB") || (document.getElementById("channelSelectElement1").value==="SCALES")  ) {
         xPlotmSTimer = 2000;      // 2 sec plot
         sampleuSTimer = 100000;  // 100ms sample
+        xPlotSamplesPerSecond = 1000000 / sampleuSTimer;
       }
       if (currentuSTimer!=sampleuSTimer) {
         data2send="";
@@ -336,8 +342,9 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       UpdateMST(xPlotmSTimer,sampleuSTimer);
       var plotElementID = document.getElementById("plotElement");
       var pctx = plotElementID.getContext("2d"); 
-      xPlotPositionStep = (((plotCanvasWidth * xPlotmSTimer)/ (xPlotTotalTimeMax * xPlotScaleFactor))/1000); //DAG modified and using mstimer   
-      //xPlotPositionStep = plotCanvasWidth / (xPlotTotalTimeMax * xPlotSamplesPerSecond * xPlotScaleFactor); //original
+     // xPlotPositionStep = (((plotCanvasWidth * xPlotmSTimer)/ (xPlotTotalTimeMax * xPlotScaleFactor))/1000); //DAG modified and using mstimer   
+      //xPlotPositionStep = (((plotCanvasWidth * xPlotmSTimer)/ (xPlotTotalTimeMax * xPlotScaleFactor))/1000); //DAG for scope screen size again    
+      xPlotPositionStep = plotCanvasWidth / (xPlotTotalTimeMax * xPlotSamplesPerSecond * xPlotScaleFactor); //original
       pctx.fillStyle = "white";
       pctx.clearRect(0, 0, plotCanvasWidth, plotCanvasHeight);
       pctx.beginPath();

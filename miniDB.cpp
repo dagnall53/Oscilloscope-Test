@@ -40,8 +40,9 @@ void setMsTimer(int TIME)
  //   Serial.print("...updated msTimer , sending:");
  //   Serial.println(MSGdata);
 }
-int getMsTimer(void)
+int getMsTimer(void)   // now is the update rate for the Websock send  
 {
+  if (msTimer > 1000){return 1000;}  // limit update slowness to one per second
 	return msTimer;
 }
 
