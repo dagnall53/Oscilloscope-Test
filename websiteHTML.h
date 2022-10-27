@@ -42,6 +42,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     var yPlotOldPosition2 = 0;
      var yPlotScaleFactor = 10;   // DAG nb setting a different start point
      var xPlotScaleFactor = 1;
+     var xPlotTotalTimeMax =2;
      //var xPlotmSTimer = 2000;  // 
      var sampleuSTimer =5000;  // us for samples
      var xPlotSamplesPerSecond = 200; // 

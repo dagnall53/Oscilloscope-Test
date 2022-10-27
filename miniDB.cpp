@@ -30,7 +30,7 @@ void setMsTimer(int TIME)
 {
   String  MSGdata ;
 	msTimer = TIME ; 
-  Serial.print(" Setting Scope screen update Timer to:");
+  Serial.print(" Setting Websockets update Timer to:");
   Serial.print(msTimer);
   Serial.println("ms");
 

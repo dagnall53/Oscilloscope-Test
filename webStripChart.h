@@ -16,42 +16,7 @@ var wsMessageArray = "";
 var Data2,Data1;
 var lastData2,lastData1;
 
-function GetDataPS() 
-{
- if(wsMessageArray[1] === "ADC") {
-    if(wsMessageArray[2]==="DUPLEX") {
-      if(wsMessageArray.length > 3) { 
-				for(var updatePlotCounter = 3; updatePlotCounter <= (wsMessageArray.length-1); updatePlotCounter++)	{ 
-					Data1 = (parseInt(wsMessageArray[updatePlotCounter]));
-          updatePlotCounter++;
-          Data2 = (parseInt(wsMessageArray[updatePlotCounter]));
-          demograph.update([Data1, Data2]);  
-         }
-			}
-	}
-
-
-	if(wsMessageArray[2]==="DATACHANNEL1") {
-
-		 if(wsMessageArray.length > 3)	{ 
-			 for(var updatePlotCounter = 3; updatePlotCounter <= (wsMessageArray.length-1); updatePlotCounter++)	{ 
-				Data1 = (parseInt(wsMessageArray[updatePlotCounter]));
-                demograph.update([Data1, Data2]);
-            }
-		 }
-	}
-	  
-	if(wsMessageArray[2] === "DATACHANNEL2") {
-
-		if(wsMessageArray.length > 3)		{
-			for(var updatePlotCounter = 3; updatePlotCounter <= (wsMessageArray.length-1); updatePlotCounter++)			{
-				Data2 = (parseInt(wsMessageArray[updatePlotCounter]));
-        //demograph.update([Data1, Data2]);
-      }
-		}
-	}
- }
-}     
+   
 
 
  
@@ -63,11 +28,11 @@ function GetDataPS()
       {
         console.log('websock open');
         websock.send("PicoGraph setup started"); 
+        
+        websock.send("SCOPE CHANNEL 2 DIG");    // set ch2 = dig  // set first!
         websock.send("SCOPE DUPLEX 1 int ADC"); // set duplex and ch 1 = int adc
-        websock.send("SCOPE CHANNEL 2 DIG");    // set ch2 = dig  
- 
-        websock.send("SCOPE MSTIMER 500");  // update rate ? fast to avoid interval timer time out
-        websock.send("SCOPE Sample_uS 2000");  // dag note max rate for two scales to be read alternately
+        websock.send("SCOPE MSTIMER 100");  // update rate ? fast to avoid getdataps interval timer time out
+        websock.send("SCOPE Sample_uS 3000");  // dag note max rate for two scales to be read alternately
         websock.send("PicoGraph setup Finished"); 
       };
       websock.onclose = function(evt)
@@ -98,7 +63,20 @@ function GetDataPS()
     }
 
  
- 
+function GetDataPS() {
+  if(wsMessageArray[1] === "ADC") {
+    if(wsMessageArray[2]==="DUPLEX") {
+      if(wsMessageArray.length > 3) { 
+				for(var updatePlotCounter = 3; updatePlotCounter <= (wsMessageArray.length-1); updatePlotCounter++)	{ 
+					Data1 = (parseInt(wsMessageArray[updatePlotCounter]));
+          updatePlotCounter++;
+          Data2 = (parseInt(wsMessageArray[updatePlotCounter]));
+          demograph.update([Data1, Data2]);  
+        }
+      }
+		}
+	}
+}   
  
  
  function byID(id) {
@@ -509,8 +487,7 @@ function colorArray(len) {
             yrand0 = Math.random() * 10;
             yrand1 = Math.random() * 10;
             GetDataPS();
-            //demograph.update([Data1, Data2]);
-            
+    
            
             /* Update graph */
            // demograph.update([yrand0, yrand1])

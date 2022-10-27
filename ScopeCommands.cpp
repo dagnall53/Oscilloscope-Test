@@ -169,10 +169,12 @@ String scopeHandler(WebSocketsServer& WEBSOCKETOBJECT) {
 
   if ((getChanneMode2() == "4V ADC") || (getChanneMode2() == "64V ADC") || (getChanneMode2() == "INT ADC") || (getChanneMode2() == "DIG") || (getChanneMode2() == "SCALESB") || (getChanneMode2() == "SCALES")) {
     toggledChannelOffFlag2 = false;
+    if (!getDuplexMode()) {
     channelModeOutput2 = "SCOPE ADC DATACHANNEL2";
     channelModeOutput2 += String(getADCScopeData2());
     WEBSOCKETOBJECT.broadcastTXT(channelModeOutput2);
     _output_summary += " [" + channelModeOutput2 + "]";
+    }
   }
 
 
