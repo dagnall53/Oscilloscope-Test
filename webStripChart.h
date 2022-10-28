@@ -15,8 +15,10 @@ static const char PROGMEM STRIP_HTML[] = R"rawliteral(
 var wsMessageArray = "";
 var Data2,Data1;
 var lastData2,lastData1;
-
-   
+var Test1 = [];
+var Test2 = [];
+var Data_Length = 0;
+var Data_Updated = false;   
 
 
  
@@ -31,9 +33,11 @@ var lastData2,lastData1;
         
         websock.send("SCOPE CHANNEL 2 DIG");    // set ch2 = dig  // set first!
         websock.send("SCOPE DUPLEX 1 int ADC"); // set duplex and ch 1 = int adc
-        websock.send("SCOPE WS_Timer 100");  // update rate ? fast to avoid getdataps interval timer time out
-        websock.send("SCOPE Sample_uS 3000");  // dag note max rate for two scales to be read alternately
-        websock.send("PicoGraph setup Finished"); 
+        websock.send("SCOPE WS_Timer 3000");  // ms update rate ? ?N/A for duplex mode  
+        websock.send("SCOPE Sample_uS 3000");  // dag note max rate ? about 3ms for internal
+        websock.send("PicoGraph setup Finished "); 
+        websock.send("Data_accepted "); // sets up flags
+        websock.send("Request_Sample_Send ");   // initiates first send.. 
       };
       websock.onclose = function(evt)
       {
@@ -64,18 +68,26 @@ var lastData2,lastData1;
 
  
 function GetDataPS() {
+  if (Data_Updated == false){
   if(wsMessageArray[1] === "ADC") {
     if(wsMessageArray[2]==="DUPLEX") {
-      if(wsMessageArray.length > 3) { 
+      if(wsMessageArray.length > 3) {
+        Data_Length=0; 
 				for(var updatePlotCounter = 3; updatePlotCounter <= (wsMessageArray.length-1); updatePlotCounter++)	{ 
 					Data1 = (parseInt(wsMessageArray[updatePlotCounter]));
+          Test1[Data_Length]=(parseInt(wsMessageArray[updatePlotCounter]));
           updatePlotCounter++;
           Data2 = (parseInt(wsMessageArray[updatePlotCounter]));
-          demograph.update([Data1, Data2]);  
+          Test2[Data_Length] = (parseInt(wsMessageArray[updatePlotCounter]));
+          //demograph.update([Data1, Data2]);  
+          Data_Length ++;
         }
+        Data_Updated = true;  
+        websock.send("Data_accepted");
       }
 		}
 	}
+  }
 }   
  
  
@@ -237,6 +249,7 @@ class Graph {
     }
 
     updateLegends(values) {
+     // console.log ( values )
         for (let i = 0; i < this.noLabels; i++)
             byID(this.valueIDs[i]).innerHTML = values[i].toFixed(2) + " " + this.unit
     }
@@ -477,21 +490,25 @@ function colorArray(len) {
         /* Create graph using picograph */
         let demograph = createGraph("graphDemo",
             ["CH1", "CH2"],
-            "units", "graphLabels", 5, 10, 0, true, false);
+            "units", "graphLabels", 1, 10, 0, true, false);
+
+            //GetDataPS();
 
         /* Update values every xxxx ms */
-         setInterval(GetDataPS, 100);
-
-        function updateEverySecond() {
-            /* Get new values */
-            yrand0 = Math.random() * 10;
-            yrand1 = Math.random() * 10;
-            GetDataPS();
+       setInterval(updateEverySecond, 600);  // add random data should be less than WS_Timer ? 
     
-           
-            /* Update graph */
-           // demograph.update([yrand0, yrand1])
-        }
+      function updateEverySecond() {
+        console.log (" every second");
+        console.log(Data_Length);
+        if (Data_Updated == true){
+ 	         for(var Counter = 0; Counter <= Data_Length-1; Counter++)	{ 
+               demograph.update([Test1[Counter], Test2[Counter]]);
+               } 
+            Data_Length = 0;
+          } 
+          Data_Updated = false;
+         websock.send("Request_Sample_Send "); 
+      }
 
     </script>
 </body>

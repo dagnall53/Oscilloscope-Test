@@ -86,6 +86,7 @@ WebSocketsServer webSocket = WebSocketsServer(81);
 void BROADCAST(String MSG);
 
 void setup() {
+  
   SetDigInputs(D_in1, D_in2);
   Serial.begin(115200);
   pinMode(LED, OUTPUT);
@@ -166,6 +167,8 @@ void setup() {
   Serial.println("Waiting for browser to connect");
   clearADCScopeData1();
   clearADCScopeData2();
+ // Set_Data_RTS (true);
+ // Set_Request_Sample_Send (true);
 }
 
 void BROADCAST(String MSG) {
@@ -185,9 +188,9 @@ void loop() {
   server.handleClient();
   //Original
   if ((currentTime - oldTimeADC) >= (getsampleuSTimer()/1000) ) {  // 5ms sample rate
-    //DUPLEXHandler(); if (getDuplexMode()) {}
+  
    // Serial.println("ADC Handle");
-    ADCHandlerold();
+    ADCHandler(); // now handles duplex 
     oldTimeADC = currentTime;
   }
   if (webSocketData != "") {
@@ -195,13 +198,24 @@ void loop() {
    // Serial.println("Websocket data Handle");
     webSocketData = "";
   }
-  if ((currentTime - oldTime) >= getWS_Timer() ) {
+  if ( !getDuplexMode() && (currentTime - oldTime) >= getWS_Timer() ) {
     LEDFLASH();
-   // Serial.println("websocket OUT");
+    Serial.print(".");
     scopeHandler(webSocket);
     webSocketData = "";
     oldTime = currentTime;
   }
+  if ( getDuplexMode() && Data_RTS() && Request_Sample_Send() ){
+    Serial.print("/");
+    scopeHandler(webSocket);
+    webSocketData = "";
+    oldTime = currentTime;
+    Set_Request_Sample_Send(false); // or on websock accepted ?
+    Set_Data_RTS(false);
+
+  } 
+
+
 }
 // Revised
 
@@ -236,13 +250,13 @@ void loop() {
 //     digitalWrite(LED, PHASE);  //DAG LED flashing
 //     PHASE = !PHASE;
 
-//     //if(get_data){
+//     //if(Data_RTS){
 //     // Serial.println(bmp.readTemperature());
 //     // String json = "{\"value\":";
 //     // json += "100";
 //     // json += "}";
 //     // webSocket.broadcastTXT(json.c_str(), json.length());
-//     //get_data = false;
+//     //Data_RTS = false;
 //     //}
 
 //     /*

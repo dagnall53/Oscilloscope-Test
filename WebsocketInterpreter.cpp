@@ -1,4 +1,7 @@
 #include "WebsocketInterpreter.h"
+
+
+
 extern void handleTest();
 void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKETDATA)
 {
@@ -7,6 +10,19 @@ void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKE
   String serialClear = "SERIAL UART CLEAR";
   Serial.println("New data received: " + WEBSOCKETDATA);
   
+ if(WEBSOCKETDATA.startsWith("Data_accepted"))
+  { 
+    Serial.println(" // Data Accepted  get=true SSS= false");
+    Set_Data_RTS (true); 
+    Set_Request_Sample_Send(false);
+  }
+
+ if (WEBSOCKETDATA.startsWith("Request_Sample_Send")){
+    Set_Request_Sample_Send(true);
+
+ }
+
+
   //I2C related tasks
   if(WEBSOCKETDATA.startsWith("I2C"))
   {

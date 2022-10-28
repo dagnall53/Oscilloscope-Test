@@ -8,8 +8,20 @@
 #include "I2CCommands.h"
 #include "miniDB.h"
 
+
+
+
+
+
 int ScreenUpdate(int A) ;
 int Screen_U_time();
+
+bool Request_Sample_Send (void);
+void Set_Request_Sample_Send (bool set);
+
+
+bool Data_RTS (void);
+void Set_Data_RTS( bool set);
 
 void SetDigInputs(byte D0 , byte D1);
 
@@ -20,8 +32,8 @@ String scopeHandler(WebSocketsServer &WEBSOCKETOBJECT);
 void ADCInit(void);
 void setADCChannel(int CHANNEL);
 int ADCRead(void);
-void DUPLEXHandler(void);
-void ADCHandlerold(void);
+
+void ADCHandler(void);
 long ChannelRead1 (void);
 long ChannelRead2 (void);
 
@@ -31,4 +43,3 @@ void ScalesInit(byte Data,byte Clock);
 boolean ScalesConnected(void);
 void SetScalesConnected(boolean set);
 long readScales(byte Chan);
-
