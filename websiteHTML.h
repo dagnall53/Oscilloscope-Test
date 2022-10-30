@@ -93,7 +93,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         //websock.send("SCOPE Sample_uS 5000");  // dag note max rate for two scales to be read alternately
        websock.send("Function Start completed "); 
         websock.send("Data_accepted "); // sets up flags
-        websock.send("Request_Sample_Send ");   // initiates first send.. (not needed for original display.. )
+        websock.send("Read_CTS ");   // initiates first send.. (not needed for original display.. )
       };
       websock.onclose = function(evt)
       {

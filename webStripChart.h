@@ -23,24 +23,25 @@ var Data_Updated = false;
  var toggleSettingsElementFlag = false;
  var currentScreenElement = "STRIPCHART";
 
-
+ var xPlotSampleRate = "3000";
+ var WebSockTimeIntervalMS ="1000";
+ var Scale1 = "38";  // 256/5
+ var Scale2 = "100";  // 256/5
  
- function startPS()
+ function start()
     {
       //websock = new WebSocket('ws://192.168.4.1:81/');
       websock = new WebSocket('ws://' + window.location.hostname + ':81/');
       websock.onopen = function(evt)
       {
         console.log('websock open');
-        websock.send("PicoGraph setup started"); 
-        
         websock.send("SCOPE CHANNEL 2 DIG");    // set ch2 = dig  // set first!
-        websock.send("SCOPE DUPLEX 1 int ADC"); // set duplex and ch 1 = int adc
-        websock.send("SCOPE WS_Timer 3000");  // ms update rate ? ?N/A for duplex mode  
+        websock.send("SCOPE DUPLEX 1  INT ADC"); // set duplex and ch 1 = INT 
         websock.send("SCOPE Sample_uS 3000");  // dag note max rate ? about 3ms for internal
-        websock.send("PicoGraph setup Finished "); 
+        
         websock.send("Data_accepted "); // sets up flags
-        websock.send("Request_Sample_Send ");   // initiates first send.. 
+        websock.send("Clear_to_send ");   // initiates first websock send.. 
+        websock.send("PicoGraph setup Finished "); 
       };
       websock.onclose = function(evt)
       {
@@ -60,10 +61,10 @@ var Data_Updated = false;
           {
             GetDataPS();
           }
-         // if(wsMessageArray[0] === "SERIAL")
-         // {
-         //   serialEventHandler();
-         // }
+          if(wsMessageArray[0] === "SERIAL")
+           {
+           serialEventHandler();
+          }
         }
       };
       
@@ -71,18 +72,18 @@ var Data_Updated = false;
 
  
 function GetDataPS() {
-  if (Data_Updated == false){
+  console.log( "in getdataPS()")
+  //if (Data_Updated == false){
   if(wsMessageArray[1] === "ADC") {
     if(wsMessageArray[2]==="DUPLEX") {
       if(wsMessageArray.length > 3) {
         Data_Length=0; 
 				for(var updatePlotCounter = 3; updatePlotCounter <= (wsMessageArray.length-1); updatePlotCounter++)	{ 
 					//Data1 = (parseInt(wsMessageArray[updatePlotCounter]));
-          Test1[Data_Length]=(parseInt(wsMessageArray[updatePlotCounter]));
+          Test1[Data_Length]=(parseInt(wsMessageArray[updatePlotCounter]))/parseInt(Scale1);
           updatePlotCounter++;
           //Data2 = (parseInt(wsMessageArray[updatePlotCounter]));
-          Test2[Data_Length] = (parseInt(wsMessageArray[updatePlotCounter]));
-          //demograph.update([Data1, Data2]);  
+          Test2[Data_Length] = (parseInt(wsMessageArray[updatePlotCounter]))/parseInt(Scale2);
           Data_Length ++;
         }
         Data_Updated = true;  
@@ -90,9 +91,50 @@ function GetDataPS() {
       }
 		}
 	}
-  }
+ // }
 }   
+
+ function resetStripChart() {
+        websock.send("SCOPE CHANNEL 2 DIG");    // set ch2 = dig  // set first!
+        websock.send("SCOPE DUPLEX 1  INT ADC"); // set duplex and ch 1 = INT ADC
+        websock.send("SCOPE Sample_uS 10000");  // dag note max rate ? about 10ms for internal
+        
+        websock.send("Data_accepted "); // Clears up flags
+        websock.send("Clear_to_send ");   // should initiate first websock send.. 
+        websock.send("PicoGraph setup Finished "); 
+ }
  
+ function changeSampleRate() {
+        xPlotSampleRate = document.getElementById("xScaleSampleRateElement").value;
+        data2send="";
+        data2send = "SCOPE Sample_uS ";
+        data2send += (xPlotSampleRate * 1000);  // send in us
+       websock.send(data2send);
+     }
+
+ function changeChannelSelect1()
+    {
+      channelSelect1 = "SCOPE DUPLEX 1  ";
+      channelSelect1 += document.getElementById("channelSelectElement1").value;
+      websock.send(channelSelect1);
+      
+    }
+
+ function changeChannelSelect2()
+    {
+      channelSelect2 = "SCOPE DUPLEX 2  ";
+      channelSelect2 += document.getElementById("channelSelectElement2").value;
+      websock.send(channelSelect2);
+      
+    }
+
+ function SendWS() {
+   WebSockTimeIntervalMS = document.getElementById("WSSendPeriodElement").value;
+        data2send="";
+        data2send = "SCOPE WS_Timer ";
+        data2send += (WebSockTimeIntervalMS );  // send ms
+       websock.send(data2send);
+ }   
  
  function byID(id) {
     return document.getElementById(id)
@@ -126,14 +168,14 @@ function createGraph(
     labels,
     unit,
     labelDivID,
-    intervalSize,
-    maxVal,
+    intervalSize = 1,
+    maxVal = 10,
     minVal = 0,
-    vlines = false,
+    vlines = true,
     timestamps = false,
-    scalesteps = 5,
-    vlinesFreq = 1,
-    autoScaleMode = 1
+    scalesteps = 10,
+    vlinesFreq = 200,
+    autoScaleMode = 0
 ) {
     const valueIDs = createValueIDs(labels, canvasID)
 
@@ -480,15 +522,10 @@ function selectStripChart()
         document.getElementById("scopeSettingsElement").style.display = "none";
         document.getElementById("terminalSettingsElement").style.display = "none";
         document.getElementById("i2cSettingsElement").style.display = "none";
-        if(currentScreenElement === "SCOPE")
+        if(currentScreenElement === "STRIPCHART")
         {
           document.getElementById("oscilloscopeScreenElement").style.display = "block";
           document.getElementById("oscilloscopeScreenElement").style.width = "85%";
-        }
-        if(currentScreenElement === "STRIPCHART")
-        {
-          document.getElementById("StripChartScreenElement").style.display = "block";
-          document.getElementById("StripChartScreenElement").style.width = "85%";
         }
         if(currentScreenElement === "TERMINAL")
         {
@@ -541,8 +578,8 @@ function selectStripChart()
 <style> 
 .SetBoxStyle {
     -webkit-appearance: none;
-    width: 15%;
-    height: 10vh;
+    width: 18%;
+    height: 8vh;
     background-color: #E87D75;
     color: white;
     text-decoration: none;
@@ -552,6 +589,7 @@ function selectStripChart()
     font-family: Helvetica;
     margin-left: 1%;
     margin-right: 1%;
+    font-size: 25px;
 }
 .VertBoxStyle{
     display: block;
@@ -566,25 +604,27 @@ function selectStripChart()
     border-radius: 5px;
     font-family: Helvetica;
     margin-left: 15%;
+    font-size: 18px;
 }
 .VertSelectBox{
   width: 100%;
   height: 6vh;
   margin-bottom: 2vh;
   margin-top: 2vh;
+  font-size: 15px;
 }
-    
+ .SettingsTitle{
+   width:100%;
+   height: 2.5vh;
+   font-size: 20px;
+ }
+
+
 </style>
 
 
 
-<body onload="javascript:startPS();"  style="font-family: Lucida Console, Monaco, monospace;">
-
-
-
-
-
-    <--h1>PicoGraphDemo</h1-->
+<body onload="javascript:start();"  style="font-family: Lucida Console, Monaco, monospace; background-color: Gray;">
 <div id="toggleMenuElement" style="text-align:center; height: 10vh; margin-top: 2.5vh; margin-bottom: 2.5vh;">
     <div style="display:block; width: 85%; height: 70vh; text-align:center; margin-left:7.5%;"> 
       <a href =/. ><button id="setScopeButton" class="SetBoxStyle" onclick="selectScope()">
@@ -593,7 +633,7 @@ function selectStripChart()
      --><button id="setTerminalButton" class="SetBoxStyle" onclick="selectTerminal()">
         <b>Terminal</b>
       </button><!--NOTE: This comment is to prevent white space between inline blocking elements.
-    --><button  id="setStripChartButton" class="SetBoxStyle" style="background-color:white; color:black !important" onclick="SelectMainScreen()">
+    --><button  id="setStripChartButton" class="SetBoxStyle" style="background-color:white; color:black !important" onclick="resetStripChart()">
         <b>StripChart</b> 
       </button><!--NOTE: This comment is to prevent white space between inline blocking elements.
      --><button id="setI2CButton" class="SetBoxStyle" onclick="selectI2C()">
@@ -604,14 +644,14 @@ function selectStripChart()
       </button> 
       </div>
   </div><!--NOTE: This comment is to prevent white space between inline blocking elements.-->
-
-<div id="oscilloscopeScreenElement" style="display:inline-block; vertical-align:top; text-align:center; margin-left:7.5%; width: 85%;">
+  <div id="oscilloscopeScreenElement" style="display:inline-block; vertical-align:top; text-align:center; margin-left:7.5%; width: 85%;">
     <!-- Canvas for the graph also click to get to previous page -->
     <canvas
         id="graphDemo"
-        style="width: 100%; height:600px; border:2px solid #000000;"
+        style="width: 100%; height:77vh; border:2px solid #000000;"
     >
-    </canvas> <div id="graphLabels"></div></div>
+    </canvas> 
+    <div id="graphLabels"></div></div>
 
     
     <!-- div for legends/labels -->
@@ -619,10 +659,10 @@ function selectStripChart()
     <!-- // NEW STUFF-->
 <div id="settingsScreenElement" style="width: 33%; display:none; height: 77.5vh; font-family:Helvetica; vertical-align:top; text-align:center; background-color:white; color:#4E4E56; border-radius:5px; margin-left:2%;"><!--NOTE: This comment is to prevent white space between inline blocking elements.
   ---><div id="scopeSettingsElement" style="display:block; width:100%; height:77.5vh; overflow-y:auto; ">
-      <div class= "VertSelectBox" class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">Pause</span> <button id="togglePauseButton" class="VertBoxStyle" onclick="togglePause()">
+      <div class= "VertSelectBox"  > <span class= "SettingsTitle" >Pause</span> <button id="togglePauseButton" class="VertBoxStyle" onclick="togglePause()">
         <b>Pause: Off</b>
       </button> </div>
-      <div class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">Channel 1</span> <select id="channelSelectElement1" class="VertBoxStyle" onchange="changeChannelSelect1();" >
+      <div class= "VertSelectBox" > <span class= "SettingsTitle" >Channel 1</span> <select id="channelSelectElement1" class="VertBoxStyle" onchange="changeChannelSelect1();" >
            <option value="OFF">Off</option>
            <option value="SCALES">HX711 Scales Ch_A</option> 
            <option value="INT ADC"selected="selected">Internal ADC (A0)</option> 
@@ -632,33 +672,36 @@ function selectStripChart()
           
           <option value="UART">UART</option>
         </select> </div>
-      <div class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">Channel 2</span> <select id="channelSelectElement2" class="VertBoxStyle" onchange="changeChannelSelect2();" >
-          <option value="OFF"selected="selected">Off</option>
+      <div class= "VertSelectBox" > <span class= "SettingsTitle" >Channel 2</span> <select id="channelSelectElement2" class="VertBoxStyle" onchange="changeChannelSelect2();" >
+          <option value="OFF">Off</option>
           <option value="SCALES">HX711 Scales Ch_A</option> 
           <option value="SCALESB">HX711 Scales Ch_B</option> 
           <option value="INT ADC">Internal ADC (A0)</option>
-          <option value="DIG">Digital Input (2)</option>
+          <option value="DIG" selected="selected" >Digital Input (2)</option>
           <option value="4V ADC">4V ADC</option>
           <option value="64V ADC">64V ADC</option>
-          <option value="UART">UART</option>
+          <option value="TRIA">Triangle test</option>
         </select> </div>
-      <div class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">Signal Zoom</span> <select id="yScaleSelectElement" class="VertBoxStyle" onchange="changeYScale();" >
-          <option value="1" >1X</option>
-          <option value="2">2X</option>
-          <option value="5">5X</option>
-          <option value="10" selected="selected">10X</option>
-          <option value="20">20X</option>
-          <option value="50">50X</option>
+      <div class= "VertSelectBox" > <span class= "SettingsTitle" >Sample Rate (ms)</span> <select id="xScaleSampleRateElement" class="VertBoxStyle" onchange="changeSampleRate();" >
+          <option value="1" >1ms fastest</option>
+          <option value="3" >3ms </option>
+          <option value="5" >5ms </option>
+          <option value="10" selected="selected" >10ms</option>
+          <option value="20">20ms</option>
+          <option value="100">100ms</option>
+          <option value="1000" >1sec</option>
+          <option value="10000">10sec</option>
+          
         </select> </div>
-      <div class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">Time Zoom</span> <select id="xScaleSelectElement" class="VertBoxStyle" onchange="changeXScale();" >
-          <option value="1" selected="selected">1X</option>
-          <option value="2">2X</option>
-          <option value="5">5X</option>
-          <option value="10">10X</option>
-          <option value="20">20X</option>
-          <option value="100">100X</option>
+      <div class= "VertSelectBox" > <span  class= "SettingsTitle" >WS Send Period </span> <select id="WSSendPeriodElement" class="VertBoxStyle" onchange="SendWS();" >
+          <option value="50"> 50ms </option>
+          <option value="100">100ms</option>
+          <option value="500">0.5s</option>
+          <option value="1000" selected="selected">1s</option>
+          <option value="10000">10s</option>
+         
           </select> </div>
-      <div class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">Max X Scale</span> <select id="timescaleSelectElement" class="VertBoxStyle" onchange="changeTimeScale();" >
+      <div class= "VertSelectBox" > <span  class= "SettingsTitle" >Max X Scale</span> <select id="timescaleSelectElement" class="VertBoxStyle" onchange="changeTimeScale();" >
           <option value="1" >1s</option>
           <option value="2" >2s</option>
           <option value="10" selected="selected">10s</option>
@@ -668,26 +711,26 @@ function selectStripChart()
           <option value="300">5min</option>
           <option value="600">10min</option>
         </select> </div>
-      <div class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">Peak Detection</span> <button id="togglePeakDetectionButton" class="VertBoxStyle"  onclick="togglePeakDetection()">
+      <div class= "VertSelectBox" > <span  class= "SettingsTitle" >Peak Detection</span> <button id="togglePeakDetectionButton" class="VertBoxStyle"  onclick="togglePeakDetection()">
         <b>Peak Detection: Off</b>
       </button> </div>
-      <div class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">Log Data</span> <button id="toggleDataLogButton" class="VertBoxStyle"  onclick="toggleDataLog()">
+      <div class= "VertSelectBox" > <span  class= "SettingsTitle" >Log Data</span> <button id="toggleDataLogButton" class="VertBoxStyle"  onclick="toggleDataLog()">
         <b>Log Data: Off</b>
       </button> </div>
-       <div class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">OSD</span> <button id="toggleOSDButton" class="VertBoxStyle"  onclick="toggleOSD()">
+       <div class= "VertSelectBox" > <span  class= "SettingsTitle" >OSD</span> <button id="toggleOSDButton" class="VertBoxStyle"  onclick="toggleOSD()">
         <b>OSD: Off</b>
       </button> </div>
     </div><!--NOTE: This comment is to prevent white space between inline blocking elements.
   ---><div id="terminalSettingsElement" style="display:none; width:100%; height:77.5vh; overflow-y:auto; text-align:center; ">
-      <div class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">Connect</span> <button id="connectTerminalButton" class="VertBoxStyle"  onclick="terminalConnect()">
+      <div class= "VertSelectBox" > <span  class= "SettingsTitle" >Connect</span> <button id="connectTerminalButton" class="VertBoxStyle"  onclick="terminalConnect()">
         <b>Connected</b>
       </button> </div>
-      <div class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">Baud Rate</span> <select id="channelSelectElement1" class="VertBoxStyle"  onchange="changeBaudRate();">
+      <div class= "VertSelectBox" > <span  class= "SettingsTitle" >Baud Rate</span> <select id="channelSelectElement1" class="VertBoxStyle"  onchange="changeBaudRate();">
         <option value="115200" selected="selected">115200</option>
         <option value="57600">57600</option>
         <option value="9600">9600</option>
       </select> </div>
-      <div class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">Clear Terminal</span> <button id="clearTerminalButton" class="VertBoxStyle"  onclick="terminalClear()">
+      <div class= "VertSelectBox" > <span  class= "SettingsTitle" >Clear Terminal</span> <button id="clearTerminalButton" class="VertBoxStyle"  onclick="terminalClear()">
         <b>Clear</b>
       </button> </div>
       <div style="width: 100%; height:12.5vh; margin-top:2.5vh; margin-bottom:2.5vh;"> <span style="width: 100%; height:2.5vh;">Local Echo</span> <button id="toggleTerminalEchoButton" class="VertBoxStyle"  onclick="toggleTerminalEcho()">
@@ -697,15 +740,15 @@ function selectStripChart()
   ---><div id="i2cSettingsElement" style="display:none; width:100%; height:77.5vh; overflow-y:auto; "> </div>
   </div>
     <script>
-        /* Create graph using picograph */
+        /* Create graph using picograph  variable is number of xsteps per sample  */
         let demograph = createGraph("graphDemo",
             ["CH1", "CH2"],
-            "units", "graphLabels", 1, 10, 0, true, false);
+            " ", "graphLabels"  );
 
-            //GetDataPS();
+            GetDataPS();
 
         /* Update values every xxxx ms */
-       setInterval(updateEverySecond, 600);  // add random data should be less than WS_Timer ? 
+       setInterval(updateEverySecond, 50);  
     
       function updateEverySecond() {
         console.log (" every second");
@@ -715,9 +758,11 @@ function selectStripChart()
                demograph.update([Test1[Counter], Test2[Counter]]);
                } 
             Data_Length = 0;
-          } 
-          Data_Updated = false;
-         websock.send("Request_Sample_Send "); 
+            Data_Updated = false;
+            websock.send("Clear_to_send "); 
+          }else {console.log (" No Data ");} 
+          
+         
       }
 
     </script>

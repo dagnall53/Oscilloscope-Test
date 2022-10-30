@@ -8,17 +8,18 @@ void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKE
   String topLevelToken = "";
   String subLevelToken = "";
   String serialClear = "SERIAL UART CLEAR";
-  Serial.println("New data received: " + WEBSOCKETDATA);
+ // Serial.println("New data received: " + WEBSOCKETDATA);   turn on for debugging!
   
  if(WEBSOCKETDATA.startsWith("Data_accepted"))
   { 
-    Serial.println(" // Data Accepted  get=true SSS= false");
-    Set_Data_RTS (true); 
-    Set_Request_Sample_Send(false);
+  //  Serial.println(" Data Accepted reset RTS so we can read more.. ");
+    Set_Data_RTS (false); 
+    //Set_CTS(false);
   }
 
- if (WEBSOCKETDATA.startsWith("Request_Sample_Send")){
-    Set_Request_Sample_Send(true);
+ if (WEBSOCKETDATA.startsWith("Clear_to_send")){
+  // Serial.println(" _CTS ");
+    Set_CTS(true);
 
  }
 
@@ -58,9 +59,17 @@ void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKE
    if(scopeCommand.startsWith("DUPLEX 1"))
     {
       //Look at start of line for subtokens, add +1 to length to account for space
-      subLevelToken = "DUPLEX 1";
+      //subLevelToken = "DUPLEX 1";
       setDuplexMode(true);
+      subLevelToken = "CHANNEL 1";
+      setChannelMode1(scopeCommand.substring(subLevelToken.length()+1));
       } 
+   if(scopeCommand.startsWith("DUPLEX 2")) {
+      setDuplexMode(true);
+      subLevelToken = "CHANNEL 2";
+      setChannelMode2(scopeCommand.substring(subLevelToken.length()+1));
+   }
+
     
     if(scopeCommand.startsWith("CHANNEL 1"))
     {
@@ -69,6 +78,7 @@ void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKE
       subLevelToken = "CHANNEL 1";
       setChannelMode1(scopeCommand.substring(subLevelToken.length()+1));
      }
+
     if(scopeCommand.startsWith("CHANNEL 2"))
     {
       setDuplexMode(false);

@@ -20,11 +20,12 @@ long TAREA = 0;
 long TAREB = 0;
 byte LastChanRead = 0;
 
-int MAX_Samples = 400;   // for duplex testing
+int MAX_Samples = 200;   // for duplex testing testd to 1000 not found limit.. 
 
 int NumberofSamplesRead = 0;
-bool _getdata ;
-bool _Request_SendWSest;
+int TestTriangle = 0;
+bool _RTS ;
+bool _CTS;
 
 byte ScopeDigInput0, ScopeDigInput1;
 int Screen_update_time;
@@ -35,24 +36,30 @@ int Screen_U_time() {
   return Screen_update_time;
 }
 
-bool Request_Sample_Send (void){
-  return _Request_SendWSest;
+bool Read_CTS (void){
+  return _CTS;
 }
-void Set_Request_Sample_Send (bool set) {
- _Request_SendWSest = set;
+void Set_CTS (bool set) {
+ _CTS = set;
 }
 
 
 bool Data_RTS (void){
-  return _getdata;
+  return _RTS;
 }
 void Set_Data_RTS( bool set){
-  _getdata = set;
+  // if false also reset Numberof samples read counter ?
+  _RTS = set;
 }
 
 
+void ResetNumberofSamplesread(){
+NumberofSamplesRead =0;
+}
 
-
+int readNumberofsamplesRead(void){
+  return NumberofSamplesRead;
+}
 
 void SetDigInputs(byte D0, byte D1) {
   ScopeDigInput0 = D0;
@@ -155,15 +162,22 @@ String scopeHandler(WebSocketsServer& WEBSOCKETOBJECT) {
   // Serial.println(getADCScopeData1());
   // Serial.print("    ADCdata2");
   //Serial.println(getADCScopeData2());
+  Serial.print("scopehandler getchannelmode1[");Serial.print(getChanneMode1());Serial.println("]");
   String _output_summary = "";
 
-  if ((getChanneMode1() == "4V ADC") || (getChanneMode1() == "64V ADC") || (getChanneMode1() == "INT ADC") || (getChanneMode1() == "DIG") || (getChanneMode1() == "SCALES")) {
+  if ((getChanneMode1() == "4V ADC") || (getChanneMode1() == "64V ADC") || (getChanneMode1() == "INT ADC") || (getChanneMode1() == "DIG") || (getChanneMode1() == "SCALES")) 
+  {
     toggledChannelOffFlag1 = false;
     
       if ((getDuplexMode()) ) { // !! Pling as we have managed to capture.. or another flag ? 
+        //Serial.print("duplex send");
         channelModeOutput1 = "SCOPE ADC DUPLEX";
         channelModeOutput1 += String(getADCScopeData1());  // getADCScopeData1 has special DUPLEX mode that captures BOTH channels 
-        NumberofSamplesRead =0 ; //  reset 
+        WEBSOCKETOBJECT.broadcastTXT(channelModeOutput1);
+        _output_summary += " [" + channelModeOutput1 + "]";
+        clearADCScopeData1();
+        clearADCScopeData2();        
+        return _output_summary;
         } else { 
        // prevent Scope ADC channel 1 if not ready 
         channelModeOutput1 = "SCOPE ADC DATACHANNEL1";
@@ -274,13 +288,15 @@ int ADCRead(void) {
     return ADCResult;
   }
 }
-void ADCHandler(void) {  // reads BOTH channels and sets the strings
+void ADCHandler(void) {  // DUPLEX MODE reads BOTH channels and builds up the strings to send data in bulk
   
  
-  if (getDuplexMode() && !Data_RTS() ) {  
-    addADCScopeData1(String(ChannelRead1(), DEC)); addADCScopeData1(String(ChannelRead2(), DEC));
+  if (getDuplexMode() && !Data_RTS() ) {  // Build up while RTS is false..
+   // addADCScopeData1(String(ChannelRead1(), DEC)); addADCScopeData1(String(NumberofSamplesRead, DEC));       // addADCScopeData1(String(ChannelRead2(), DEC));
+    addADCScopeData1(String(ChannelRead1(), DEC));  addADCScopeData1(String(ChannelRead2(), DEC));
     NumberofSamplesRead++;  
     if (NumberofSamplesRead >= MAX_Samples) {Set_Data_RTS(true);}// limit number of samples that can be sent in a duplex websock message
+    if (getsampleuSTimer() >= 2000) {Set_Data_RTS(true);} // ?? Allow faster update rate for slow samples per second
   } else 
   { 
     addADCScopeData1(String(ChannelRead1(), DEC));
@@ -354,6 +370,14 @@ long ChannelRead2(void) {
     temp = ((ADCRead() * 4096 / 64) / CH1Scale);
   }
 
+
+
+if (getChanneMode2() == "TRIA") {
+    
+    temp = TestTriangle;
+    TestTriangle++;
+    if ( TestTriangle >=1000){TestTriangle=0;}
+  }
 
   return temp;
 }

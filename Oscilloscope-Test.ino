@@ -162,13 +162,14 @@ void setup() {
   Serial.println(SinglescanI2CAddress(webSocket, 60));
   Serial.println(SinglescanI2CAddress(webSocket, 50));
   Serial.println("testing for HX 711   ");
-  ScalesInit(_Data, _Clock);  // needs to work if no hx711!
+  ScalesInit(_Data, _Clock);  // needs to still work if no hx711!
   ADC1READ = 0;
   Serial.println("Waiting for browser to connect");
   clearADCScopeData1();
   clearADCScopeData2();
+  
  // Set_Data_RTS (true);
- // Set_Request_Sample_Send (true);
+ // Set_CTS (true);
 }
 
 void BROADCAST(String MSG) {
@@ -188,7 +189,7 @@ void loop() {
   server.handleClient();
   //Original
   if ((currentTime - oldTimeADC) >= (getsampleuSTimer()/1000) ) {  // 5ms sample rate
-  
+  // and 
    // Serial.println("ADC Handle");
     ADCHandler(); // now handles duplex 
     oldTimeADC = currentTime;
@@ -205,13 +206,17 @@ void loop() {
     webSocketData = "";
     oldTime = currentTime;
   }
-  if ( getDuplexMode() && Data_RTS() && Request_Sample_Send() ){
-    Serial.print("/");
+  if ( getDuplexMode() && Data_RTS()  ){
+    //  if ( getDuplexMode() && Data_RTS() && Read_CTS() ){
+   // Serial.print("/");Serial.print(readNumberofsamplesRead());
+    //Serial.println(scopeHandler(webSocket));  // scopehandler returns the sent data 
     scopeHandler(webSocket);
     webSocketData = "";
     oldTime = currentTime;
-    Set_Request_Sample_Send(false); // or on websock accepted ?
-    Set_Data_RTS(false);
+    Set_CTS(false); // or on websock accepted ?
+    ResetNumberofSamplesread();
+    Set_Data_RTS(false); // resets for new samples  
+    //delay(50);
 
   } 
 

@@ -16,12 +16,14 @@
 int ScreenUpdate(int A) ;
 int Screen_U_time();
 
-bool Request_Sample_Send (void);
-void Set_Request_Sample_Send (bool set);
+bool Read_CTS (void);
+void Set_CTS (bool set);
 
 
 bool Data_RTS (void);
 void Set_Data_RTS( bool set);
+void ResetNumberofSamplesread(void);
+int readNumberofsamplesRead(void);
 
 void SetDigInputs(byte D0 , byte D1);
 
