@@ -8,7 +8,7 @@ static const char PROGMEM STRIP_HTML[] = R"rawliteral(
 <html>
 
 <head>
-    <title> PicoGraphDemo</title>
+    <title> PicoGraphDemo </title>
  
  <script>
  // copied from Original picograph added PS in case of problems
@@ -19,6 +19,9 @@ var Test1 = [];
 var Test2 = [];
 var Data_Length = 0;
 var Data_Updated = false;   
+
+ var toggleSettingsElementFlag = false;
+ var currentScreenElement = "STRIPCHART";
 
 
  
@@ -74,10 +77,10 @@ function GetDataPS() {
       if(wsMessageArray.length > 3) {
         Data_Length=0; 
 				for(var updatePlotCounter = 3; updatePlotCounter <= (wsMessageArray.length-1); updatePlotCounter++)	{ 
-					Data1 = (parseInt(wsMessageArray[updatePlotCounter]));
+					//Data1 = (parseInt(wsMessageArray[updatePlotCounter]));
           Test1[Data_Length]=(parseInt(wsMessageArray[updatePlotCounter]));
           updatePlotCounter++;
-          Data2 = (parseInt(wsMessageArray[updatePlotCounter]));
+          //Data2 = (parseInt(wsMessageArray[updatePlotCounter]));
           Test2[Data_Length] = (parseInt(wsMessageArray[updatePlotCounter]));
           //demograph.update([Data1, Data2]);  
           Data_Length ++;
@@ -461,8 +464,72 @@ function colorArray(len) {
     return colorArray
 }
 
+function selectStripChart()
+    {
+      currentScreenElement = "OSCILLOSCOPE";
+      updateButtonSelect(currentScreenElement);
 
+    }
 
+  function updateSettingsElementToggle()
+    {
+      if(toggleSettingsElementFlag)
+      {
+        document.getElementById("setSettingsButton").style.backgroundColor = "#E87D75";
+        document.getElementById("setSettingsButton").style.color = "white";
+        document.getElementById("scopeSettingsElement").style.display = "none";
+        document.getElementById("terminalSettingsElement").style.display = "none";
+        document.getElementById("i2cSettingsElement").style.display = "none";
+        if(currentScreenElement === "SCOPE")
+        {
+          document.getElementById("oscilloscopeScreenElement").style.display = "block";
+          document.getElementById("oscilloscopeScreenElement").style.width = "85%";
+        }
+        if(currentScreenElement === "STRIPCHART")
+        {
+          document.getElementById("StripChartScreenElement").style.display = "block";
+          document.getElementById("StripChartScreenElement").style.width = "85%";
+        }
+        if(currentScreenElement === "TERMINAL")
+        {
+          document.getElementById("terminalScreenElement").style.display = "block";
+          document.getElementById("terminalScreenElement").style.width = "85%";
+        }
+        if(currentScreenElement === "I2C")
+        {
+          document.getElementById("i2cScreenElement").style.display = "block";
+          document.getElementById("i2cScreenElement").style.width = "85%";
+        }
+        document.getElementById("settingsScreenElement").style.display = "none";
+        toggleSettingsElementFlag = false;
+      }
+      else
+      {
+        document.getElementById("setSettingsButton").style.backgroundColor = "white";
+        document.getElementById("setSettingsButton").style.color = "#4E4E56";
+        if(currentScreenElement === "STRIPCHART")
+        {
+          document.getElementById("oscilloscopeScreenElement").style.display = "inline-block";
+          document.getElementById("oscilloscopeScreenElement").style.width = "50%";
+          document.getElementById("scopeSettingsElement").style.display = "block";
+        }
+        if(currentScreenElement === "TERMINAL")
+        {
+          document.getElementById("terminalScreenElement").style.display = "inline-block";
+          document.getElementById("terminalScreenElement").style.width = "50%";
+          document.getElementById("terminalSettingsElement").style.display = "block";
+        }
+        if(currentScreenElement === "I2C")
+        {
+          document.getElementById("i2cScreenElement").style.display = "inline-block";
+          document.getElementById("i2cScreenElement").style.width = "50%";
+          document.getElementById("i2cSettingsElement").style.display = "block";
+        }
+        document.getElementById("settingsScreenElement").style.display = "inline-block";
+        toggleSettingsElementFlag = true;
+      }
+    }
+	
 
 
  </script>
@@ -471,21 +538,164 @@ function colorArray(len) {
 
 
 </head>
+<style> 
+.SetBoxStyle {
+    -webkit-appearance: none;
+    width: 15%;
+    height: 10vh;
+    background-color: #E87D75;
+    color: white;
+    text-decoration: none;
+    border: 0;
+    padding: 0;
+    border-radius: 5px;
+    font-family: Helvetica;
+    margin-left: 1%;
+    margin-right: 1%;
+}
+.VertBoxStyle{
+    display: block;
+    -webkit-appearance: none;
+    width: 70%;
+    height: 4vh;
+    background-color: #E87D75;
+    color: white;
+    text-decoration: none;
+    border: 0;
+    padding: 0;
+    border-radius: 5px;
+    font-family: Helvetica;
+    margin-left: 15%;
+}
+.VertSelectBox{
+  width: 100%;
+  height: 6vh;
+  margin-bottom: 2vh;
+  margin-top: 2vh;
+}
+    
+</style>
+
+
 
 <body onload="javascript:startPS();"  style="font-family: Lucida Console, Monaco, monospace;">
 
-    <h1>PicoGraphDemo</h1>
-<a href=/. >
+
+
+
+
+    <--h1>PicoGraphDemo</h1-->
+<div id="toggleMenuElement" style="text-align:center; height: 10vh; margin-top: 2.5vh; margin-bottom: 2.5vh;">
+    <div style="display:block; width: 85%; height: 70vh; text-align:center; margin-left:7.5%;"> 
+      <a href =/. ><button id="setScopeButton" class="SetBoxStyle" onclick="selectScope()">
+        <b>Oscilloscope</b>
+      </button></a><!--NOTE: This comment is to prevent white space between inline blocking elements.
+     --><button id="setTerminalButton" class="SetBoxStyle" onclick="selectTerminal()">
+        <b>Terminal</b>
+      </button><!--NOTE: This comment is to prevent white space between inline blocking elements.
+    --><button  id="setStripChartButton" class="SetBoxStyle" style="background-color:white; color:black !important" onclick="SelectMainScreen()">
+        <b>StripChart</b> 
+      </button><!--NOTE: This comment is to prevent white space between inline blocking elements.
+     --><button id="setI2CButton" class="SetBoxStyle" onclick="selectI2C()">
+        <b>I2C</b>
+      </button><!--NOTE: This comment is to prevent white space between inline blocking elements.
+     --><button id="setSettingsButton" class="SetBoxStyle" onclick="updateSettingsElementToggle()">
+        <b>Settings</b>
+      </button> 
+      </div>
+  </div><!--NOTE: This comment is to prevent white space between inline blocking elements.-->
+
+<div id="oscilloscopeScreenElement" style="display:inline-block; vertical-align:top; text-align:center; margin-left:7.5%; width: 85%;">
     <!-- Canvas for the graph also click to get to previous page -->
     <canvas
         id="graphDemo"
-        style="width: 900px; height:400px; border:2px solid #000000;"
+        style="width: 100%; height:600px; border:2px solid #000000;"
     >
-    </canvas>
-</a>
-    <!-- div for legends/labels -->
-    <div id="graphLabels"></div>
+    </canvas> <div id="graphLabels"></div></div>
 
+    
+    <!-- div for legends/labels -->
+   
+    <!-- // NEW STUFF-->
+<div id="settingsScreenElement" style="width: 33%; display:none; height: 77.5vh; font-family:Helvetica; vertical-align:top; text-align:center; background-color:white; color:#4E4E56; border-radius:5px; margin-left:2%;"><!--NOTE: This comment is to prevent white space between inline blocking elements.
+  ---><div id="scopeSettingsElement" style="display:block; width:100%; height:77.5vh; overflow-y:auto; ">
+      <div class= "VertSelectBox" class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">Pause</span> <button id="togglePauseButton" class="VertBoxStyle" onclick="togglePause()">
+        <b>Pause: Off</b>
+      </button> </div>
+      <div class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">Channel 1</span> <select id="channelSelectElement1" class="VertBoxStyle" onchange="changeChannelSelect1();" >
+           <option value="OFF">Off</option>
+           <option value="SCALES">HX711 Scales Ch_A</option> 
+           <option value="INT ADC"selected="selected">Internal ADC (A0)</option> 
+           <option value="DIG">Digital Input 1 </option>
+           <option value="4V ADC" >4V ADC</option>
+           <option value="64V ADC">64V ADC</option>
+          
+          <option value="UART">UART</option>
+        </select> </div>
+      <div class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">Channel 2</span> <select id="channelSelectElement2" class="VertBoxStyle" onchange="changeChannelSelect2();" >
+          <option value="OFF"selected="selected">Off</option>
+          <option value="SCALES">HX711 Scales Ch_A</option> 
+          <option value="SCALESB">HX711 Scales Ch_B</option> 
+          <option value="INT ADC">Internal ADC (A0)</option>
+          <option value="DIG">Digital Input (2)</option>
+          <option value="4V ADC">4V ADC</option>
+          <option value="64V ADC">64V ADC</option>
+          <option value="UART">UART</option>
+        </select> </div>
+      <div class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">Signal Zoom</span> <select id="yScaleSelectElement" class="VertBoxStyle" onchange="changeYScale();" >
+          <option value="1" >1X</option>
+          <option value="2">2X</option>
+          <option value="5">5X</option>
+          <option value="10" selected="selected">10X</option>
+          <option value="20">20X</option>
+          <option value="50">50X</option>
+        </select> </div>
+      <div class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">Time Zoom</span> <select id="xScaleSelectElement" class="VertBoxStyle" onchange="changeXScale();" >
+          <option value="1" selected="selected">1X</option>
+          <option value="2">2X</option>
+          <option value="5">5X</option>
+          <option value="10">10X</option>
+          <option value="20">20X</option>
+          <option value="100">100X</option>
+          </select> </div>
+      <div class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">Max X Scale</span> <select id="timescaleSelectElement" class="VertBoxStyle" onchange="changeTimeScale();" >
+          <option value="1" >1s</option>
+          <option value="2" >2s</option>
+          <option value="10" selected="selected">10s</option>
+          <option value="20">20s</option>
+          <option value="30">30s</option>
+          <option value="60">1min</option>
+          <option value="300">5min</option>
+          <option value="600">10min</option>
+        </select> </div>
+      <div class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">Peak Detection</span> <button id="togglePeakDetectionButton" class="VertBoxStyle"  onclick="togglePeakDetection()">
+        <b>Peak Detection: Off</b>
+      </button> </div>
+      <div class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">Log Data</span> <button id="toggleDataLogButton" class="VertBoxStyle"  onclick="toggleDataLog()">
+        <b>Log Data: Off</b>
+      </button> </div>
+       <div class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">OSD</span> <button id="toggleOSDButton" class="VertBoxStyle"  onclick="toggleOSD()">
+        <b>OSD: Off</b>
+      </button> </div>
+    </div><!--NOTE: This comment is to prevent white space between inline blocking elements.
+  ---><div id="terminalSettingsElement" style="display:none; width:100%; height:77.5vh; overflow-y:auto; text-align:center; ">
+      <div class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">Connect</span> <button id="connectTerminalButton" class="VertBoxStyle"  onclick="terminalConnect()">
+        <b>Connected</b>
+      </button> </div>
+      <div class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">Baud Rate</span> <select id="channelSelectElement1" class="VertBoxStyle"  onchange="changeBaudRate();">
+        <option value="115200" selected="selected">115200</option>
+        <option value="57600">57600</option>
+        <option value="9600">9600</option>
+      </select> </div>
+      <div class= "VertSelectBox" > <span style="width: 100%; height:2.5vh;">Clear Terminal</span> <button id="clearTerminalButton" class="VertBoxStyle"  onclick="terminalClear()">
+        <b>Clear</b>
+      </button> </div>
+      <div style="width: 100%; height:12.5vh; margin-top:2.5vh; margin-bottom:2.5vh;"> <span style="width: 100%; height:2.5vh;">Local Echo</span> <button id="toggleTerminalEchoButton" class="VertBoxStyle"  onclick="toggleTerminalEcho()">
+        <b>Echo: Off</b>
+      </button> </div>
+    </div><!--NOTE: This comment is to prevent white space between inline blocking elements.
+  ---><div id="i2cSettingsElement" style="display:none; width:100%; height:77.5vh; overflow-y:auto; "> </div>
+  </div>
     <script>
         /* Create graph using picograph */
         let demograph = createGraph("graphDemo",
