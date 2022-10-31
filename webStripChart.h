@@ -20,6 +20,8 @@ var Test2 = [];
 var Data_Length = 0;
 var Data_Updated = false;   
 
+  var pauseScopeFlag = false;
+
  var toggleSettingsElementFlag = false;
  var currentScreenElement = "STRIPCHART";
 
@@ -38,7 +40,7 @@ var Data_Updated = false;
         websock.send("SCOPE CHANNEL 2 DIG");    // set ch2 = dig  // set first!
         websock.send("SCOPE DUPLEX 1  INT ADC"); // set duplex and ch 1 = INT 
         websock.send("SCOPE Sample_uS 3000");  // dag note max rate ? about 3ms for internal
-        
+        websock.send("SCOPE WS_Timer 200");
         websock.send("Data_accepted "); // sets up flags
         websock.send("Clear_to_send ");   // initiates first websock send.. 
         websock.send("PicoGraph setup Finished "); 
@@ -71,12 +73,14 @@ var Data_Updated = false;
     }
 
  
+
 function GetDataPS() {
   console.log( "in getdataPS()")
   //if (Data_Updated == false){
   if(wsMessageArray[1] === "ADC") {
-    if(wsMessageArray[2]==="DUPLEX") {
-      if(wsMessageArray.length > 3) {
+    if(wsMessageArray[2]==="DUPLEX") {  
+
+      if(wsMessageArray.length > 3) { 
         Data_Length=0; 
 				for(var updatePlotCounter = 3; updatePlotCounter <= (wsMessageArray.length-1); updatePlotCounter++)	{ 
 					//Data1 = (parseInt(wsMessageArray[updatePlotCounter]));
@@ -108,7 +112,7 @@ function GetDataPS() {
         xPlotSampleRate = document.getElementById("xScaleSampleRateElement").value;
         data2send="";
         data2send = "SCOPE Sample_uS ";
-        data2send += (xPlotSampleRate * 1000);  // send in us
+        data2send += (xPlotSampleRate * 1000);  // send in us  CHANGE LATER to actual us 
        websock.send(data2send);
      }
 
@@ -126,6 +130,24 @@ function GetDataPS() {
       channelSelect2 += document.getElementById("channelSelectElement2").value;
       websock.send(channelSelect2);
       
+    }
+
+    function togglePause()
+    {
+      if(pauseScopeFlag)
+      {
+        pauseScopeFlag = false;
+        websock.send("SCOPE PAUSE OFF");
+        document.getElementById("togglePauseButton").innerHTML = "<b>Pause: Off</b>";
+        document.getElementById("togglePauseButton").style.backgroundColor = "#E87D75";
+        //clearPlot();
+      }
+      else
+      { websock.send("SCOPE PAUSE ON");
+        pauseScopeFlag = true;
+        document.getElementById("togglePauseButton").innerHTML = "<b>Pause: On</b>";
+        document.getElementById("togglePauseButton").style.backgroundColor = "#4E4E56";
+      }
     }
 
  function SendWS() {
@@ -569,6 +591,10 @@ function selectStripChart()
 	
 
 
+
+
+
+
  </script>
 
 
@@ -644,16 +670,16 @@ function selectStripChart()
       </button> 
       </div>
   </div><!--NOTE: This comment is to prevent white space between inline blocking elements.-->
+    <div id="graphLabels" >   Extra text to be added here later:  </div></div>
+    <!-- div for legends/labels -->
   <div id="oscilloscopeScreenElement" style="display:inline-block; vertical-align:top; text-align:center; margin-left:7.5%; width: 85%;">
     <!-- Canvas for the graph also click to get to previous page -->
     <canvas
         id="graphDemo"
-        style="width: 100%; height:77vh; border:2px solid #000000;"
+        style="width: 100%; height:70vh; border:2px solid #000000;"
     >
     </canvas> 
-    <div id="graphLabels"></div></div>
-
-    
+    </div>
     <!-- div for legends/labels -->
    
     <!-- // NEW STUFF-->
@@ -736,11 +762,12 @@ function selectStripChart()
       <div style="width: 100%; height:12.5vh; margin-top:2.5vh; margin-bottom:2.5vh;"> <span style="width: 100%; height:2.5vh;">Local Echo</span> <button id="toggleTerminalEchoButton" class="VertBoxStyle"  onclick="toggleTerminalEcho()">
         <b>Echo: Off</b>
       </button> </div>
-    </div><!--NOTE: This comment is to prevent white space between inline blocking elements.
-  ---><div id="i2cSettingsElement" style="display:none; width:100%; height:77.5vh; overflow-y:auto; "> </div>
+    </div>
+    <!--NOTE: This comment is to prevent white space between inline blocking elements. --->
+    <div id="i2cSettingsElement" style="display:none; width:100%; height:77.5vh; overflow-y:auto; "> </div>
   </div>
     <script>
-        /* Create graph using picograph  variable is number of xsteps per sample  */
+        /* Create graph using picograph   */
         let demograph = createGraph("graphDemo",
             ["CH1", "CH2"],
             " ", "graphLabels"  );
@@ -751,17 +778,19 @@ function selectStripChart()
        setInterval(updateEverySecond, 50);  
     
       function updateEverySecond() {
+        
+      if(!pauseScopeFlag){ 
         console.log (" every second");
-        console.log(Data_Length);
-        if (Data_Updated == true){
+        console.log(Data_Length);       
+       if (Data_Updated == true){
  	         for(var Counter = 0; Counter <= Data_Length-1; Counter++)	{ 
                demograph.update([Test1[Counter], Test2[Counter]]);
                } 
             Data_Length = 0;
             Data_Updated = false;
             websock.send("Clear_to_send "); 
-          }else {console.log (" No Data ");} 
-          
+          }else {console.log (" No Data ");websock.send("Clear_to_send ");} 
+        }  
          
       }
 

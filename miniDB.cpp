@@ -5,6 +5,7 @@ bool dataLogFlag;
 bool dataTAREFlag;
 bool uartScopeFlag;
 bool DuplexModeFlag;
+bool _scopePause;
 String uartScopeData;
 String adcScopeData1;
 String adcScopeData2;
@@ -51,6 +52,8 @@ int getWS_Timer(void)   // now is the update rate for the Websock send
 /////////////////
 void setDataLog(bool LOG)
 {
+  Serial.print(" Setting data logger to:");
+  Serial.print(LOG);
   dataLogFlag = LOG;
 }
 bool getDataLog(void)
@@ -105,6 +108,17 @@ void clearUartScopeData(void)
   uartScopeData = "";
 }
 
+
+void setPAUSE(bool Pause){
+  Serial.print(" Setting Pause to:");
+  Serial.print(Pause);
+  _scopePause = Pause;
+}
+bool PAUSE(){
+  return _scopePause;
+}
+
+
 /////////////////
 //ADC SCOPE DATA
 /////////////////
@@ -147,6 +161,7 @@ void setChannelMode1(String MODE)
 {
   channelMode1 = "";
   channelMode1 = MODE;
+  Serial.print("Channel 1 :");Serial.println(MODE);
   if(channelMode1 == "UART")
   {
     setUartScopeFlag(true);    
@@ -160,6 +175,7 @@ void setChannelMode2(String MODE)
 {
   channelMode2 = "";
   channelMode2 = MODE;
+  Serial.print("Channel 2 :");Serial.println(MODE);
   if(channelMode2 == "UART")
   {
     setUartScopeFlag(true);    
@@ -176,4 +192,8 @@ String getChanneMode1(void)
 String getChanneMode2(void)
 {
   return channelMode2;
+}
+
+bool every(float number, int num2){
+  return ((number/num2) == int(number/num2));
 }

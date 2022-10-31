@@ -34,8 +34,12 @@ String getADCScopeData2(void);
 void clearADCScopeData1(void);
 void clearADCScopeData2(void);
 
-
+bool every(float number, int num2);
 //SCOPE PARAMETERS
+void setPAUSE(bool Pause);
+bool PAUSE();
+
+
 void setDuplexMode( bool Duplex);
 bool getDuplexMode (void);
 void setChannelMode1(String MODE);

@@ -20,7 +20,7 @@ long TAREA = 0;
 long TAREB = 0;
 byte LastChanRead = 0;
 
-int MAX_Samples = 200;   // for duplex testing testd to 1000 not found limit.. 
+int MAX_Samples = 1500;   // for duplex testing testd to 1000 not found limit.. 
 
 int NumberofSamplesRead = 0;
 int TestTriangle = 0;
@@ -162,7 +162,7 @@ String scopeHandler(WebSocketsServer& WEBSOCKETOBJECT) {
   // Serial.println(getADCScopeData1());
   // Serial.print("    ADCdata2");
   //Serial.println(getADCScopeData2());
-  Serial.print("scopehandler getchannelmode1[");Serial.print(getChanneMode1());Serial.println("]");
+  //Serial.print("scopehandler getchannelmode1[");Serial.print(getChanneMode1());Serial.println("]");
   String _output_summary = "";
 
   if ((getChanneMode1() == "4V ADC") || (getChanneMode1() == "64V ADC") || (getChanneMode1() == "INT ADC") || (getChanneMode1() == "DIG") || (getChanneMode1() == "SCALES")) 
@@ -295,8 +295,10 @@ void ADCHandler(void) {  // DUPLEX MODE reads BOTH channels and builds up the st
    // addADCScopeData1(String(ChannelRead1(), DEC)); addADCScopeData1(String(NumberofSamplesRead, DEC));       // addADCScopeData1(String(ChannelRead2(), DEC));
     addADCScopeData1(String(ChannelRead1(), DEC));  addADCScopeData1(String(ChannelRead2(), DEC));
     NumberofSamplesRead++;  
+    if (every(NumberofSamplesRead,50) )  {Serial.print("-");} 
+    if (every(NumberofSamplesRead,MAX_Samples) )  {Serial.println("-");}
     if (NumberofSamplesRead >= MAX_Samples) {Set_Data_RTS(true);}// limit number of samples that can be sent in a duplex websock message
-    if (getsampleuSTimer() >= 2000) {Set_Data_RTS(true);} // ?? Allow faster update rate for slow samples per second
+    if (getsampleuSTimer() >= 5000) {Set_Data_RTS(true);} // ?? Allow faster update rate for slow samples per second
   } else 
   { 
     addADCScopeData1(String(ChannelRead1(), DEC));

@@ -100,6 +100,23 @@ void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKE
       subLevelToken = "Sample_uS";  //DAG added to directly set Sample_uS 
       setsampleuSTimer(scopeCommand.substring(subLevelToken.length()+1).toInt());
     }
+
+    if(scopeCommand.startsWith("PAUSE"))
+    {
+      //Look at start of line for subtokens, add +1 to length to account for space
+      subLevelToken = "PAUSE";
+      if(scopeCommand.substring(subLevelToken.length()+1) == "ON")
+      {
+        setPAUSE(true);
+      }
+      else
+      {
+        setPAUSE(false);
+      }
+    }
+
+
+
     if(scopeCommand.startsWith("DATALOG"))
     {
       //Look at start of line for subtokens, add +1 to length to account for space
@@ -112,7 +129,9 @@ void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKE
       {
         setDataLog(false);
       }
-    }if(scopeCommand.startsWith("TIMESCALE"))
+    }
+    
+    if(scopeCommand.startsWith("TIMESCALE"))
     {
       //Look at start of line for subtokens, add +1 to length to account for space
       subLevelToken = "DATALOG";
