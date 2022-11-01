@@ -20,7 +20,7 @@ long TAREA = 0;
 long TAREB = 0;
 byte LastChanRead = 0;
 
-int MAX_Samples = 1500;   // for duplex testing testd to 1000 not found limit.. 
+int MAX_Samples = 320;   // for duplex testing testd to 1000 not found limit. should be set to number across the screen! . 
 
 int NumberofSamplesRead = 0;
 int TestTriangle = 0;
@@ -289,8 +289,6 @@ int ADCRead(void) {
   }
 }
 void ADCHandler(void) {  // DUPLEX MODE reads BOTH channels and builds up the strings to send data in bulk
-  
- 
   if (getDuplexMode() && !Data_RTS() ) {  // Build up while RTS is false..
    // addADCScopeData1(String(ChannelRead1(), DEC)); addADCScopeData1(String(NumberofSamplesRead, DEC));       // addADCScopeData1(String(ChannelRead2(), DEC));
     addADCScopeData1(String(ChannelRead1(), DEC));  addADCScopeData1(String(ChannelRead2(), DEC));
@@ -374,11 +372,11 @@ long ChannelRead2(void) {
 
 
 
-if (getChanneMode2() == "TRIA") {
+if (getChanneMode2() == "TRIANGLE") {
     
     temp = TestTriangle;
     TestTriangle++;
-    if ( TestTriangle >=1000){TestTriangle=0;}
+    if ( TestTriangle >=MAX_Samples+1){TestTriangle=0;}
   }
 
   return temp;

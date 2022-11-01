@@ -25,6 +25,8 @@ var Data_Updated = false;
  var toggleSettingsElementFlag = false;
  var currentScreenElement = "STRIPCHART";
 
+ var xplotInterval= "2";
+
  var xPlotSampleRate = "3000";
  var WebSockTimeIntervalMS ="1000";
  var Scale1 = "38";  // 256/5
@@ -37,9 +39,9 @@ var Data_Updated = false;
       websock.onopen = function(evt)
       {
         console.log('websock open');
-        websock.send("SCOPE CHANNEL 2 DIG");    // set ch2 = dig  // set first!
+        websock.send("SCOPE DUPLEX 2  TRIANGLE");    // set ch2 = TRIANGLE  // note double space after 1 or 2 
         websock.send("SCOPE DUPLEX 1  INT ADC"); // set duplex and ch 1 = INT 
-        websock.send("SCOPE Sample_uS 3000");  // dag note max rate ? about 3ms for internal
+        websock.send("SCOPE Sample_uS 10000");  // dag note max rate ? about 3ms for internal
         websock.send("SCOPE WS_Timer 200");
         websock.send("Data_accepted "); // sets up flags
         websock.send("Clear_to_send ");   // initiates first websock send.. 
@@ -60,8 +62,9 @@ var Data_Updated = false;
         if(wsMessageArray.length >= 2)
         {
           if(wsMessageArray[0] === "SCOPE")
-          {
-            GetDataPS();
+          { 
+            parseDuplexData();
+            
           }
           if(wsMessageArray[0] === "SERIAL")
            {
@@ -72,31 +75,44 @@ var Data_Updated = false;
       
     }
 
+function parseDuplexData() {
+  // updatepoints replacement
  
-
-function GetDataPS() {
-  console.log( "in getdataPS()")
-  //if (Data_Updated == false){
-  if(wsMessageArray[1] === "ADC") {
-    if(wsMessageArray[2]==="DUPLEX") {  
+ if(wsMessageArray[1] === "ADC") {
+    if(wsMessageArray[2] === "DUPLEX") {  
 
       if(wsMessageArray.length > 3) { 
         Data_Length=0; 
-				for(var updatePlotCounter = 3; updatePlotCounter <= (wsMessageArray.length-1); updatePlotCounter++)	{ 
-					//Data1 = (parseInt(wsMessageArray[updatePlotCounter]));
-          Test1[Data_Length]=(parseInt(wsMessageArray[updatePlotCounter]))/parseInt(Scale1);
-          updatePlotCounter++;
-          //Data2 = (parseInt(wsMessageArray[updatePlotCounter]));
-          Test2[Data_Length] = (parseInt(wsMessageArray[updatePlotCounter]))/parseInt(Scale2);
-          Data_Length ++;
+				for(var Count = 3; Count <= (wsMessageArray.length-1); Count++)	{ 
+          demograph.updatePoints( [ parseInt(wsMessageArray[Count])/parseInt(Scale1), parseInt(wsMessageArray[Count+1])/parseInt(Scale2) ] );
+          Count++;
+					Data_Length ++;
         }
-        Data_Updated = true;  
-        websock.send("Data_accepted");
       }
-		}
-	}
- // }
-}   
+    }
+  console.log ( " parseDuplexData() reading:%d points",Data_Length );
+  UpdateDisplay();
+   
+  } 
+
+
+}
+
+function UpdateDisplay(){
+  // copy of .update, but without adding data..
+console.log( "UDATE DISPLAY");   
+  demograph.clear()
+  demograph.setWidthHeightAndCssScale()
+        
+  demograph.setStepAndFontSizePixels()
+  demograph.setIntervalSizeAndLineWidth(2)
+  if (demograph.vlines) {demograph.drawVerticalLines()}
+  demograph.drawHorizontalLines()
+  if (demograph.timestamps) {demograph.drawTimestamps()}
+  demograph.drawGraph()
+}
+
+
 
  function resetStripChart() {
         websock.send("SCOPE CHANNEL 2 DIG");    // set ch2 = dig  // set first!
@@ -115,13 +131,29 @@ function GetDataPS() {
         data2send += (xPlotSampleRate * 1000);  // send in us  CHANGE LATER to actual us 
        websock.send(data2send);
      }
+     function changeInterval() {
+        xPlotInterval = document.getElementById("IntervalSelectElement").value;
+     }
+
+function checkforSPSTiming( element){
+  //console.log(" SPScheck "); console.log(element);
+  if ( (element = "SCALES")|| (element = "SCALESB") ) {        // will need to check for other names as well ?
+         xPlotSampleRate = 20;
+         data2send="";
+         data2send = "SCOPE Sample_uS ";
+         data2send += (xPlotSampleRate * 1000);  // send in us  CHANGE LATER to actual us 
+       websock.send(data2send);
+       console.log("FORCING slower SPS %d ms for HX 711",xPlotSampleRate);
+       }
+  
+ }
 
  function changeChannelSelect1()
     {
-      channelSelect1 = "SCOPE DUPLEX 1  ";
+      channelSelect1 = "SCOPE DUPLEX 1  "; // note two spaces
       channelSelect1 += document.getElementById("channelSelectElement1").value;
       websock.send(channelSelect1);
-      
+      checkforSPSTiming(document.getElementById("channelSelectElement1").value);
     }
 
  function changeChannelSelect2()
@@ -129,8 +161,10 @@ function GetDataPS() {
       channelSelect2 = "SCOPE DUPLEX 2  ";
       channelSelect2 += document.getElementById("channelSelectElement2").value;
       websock.send(channelSelect2);
+      checkforSPSTiming(document.getElementById("channelSelectElement1").value);
       
     }
+    
 
     function togglePause()
     {
@@ -190,13 +224,13 @@ function createGraph(
     labels,
     unit,
     labelDivID,
-    intervalSize = 1,
+    intervalSize = 3,
     maxVal = 10,
     minVal = 0,
     vlines = true,
-    timestamps = false,
+    timestamps = true,
     scalesteps = 10,
-    vlinesFreq = 200,
+    vlinesFreq = 50,
     autoScaleMode = 0
 ) {
     const valueIDs = createValueIDs(labels, canvasID)
@@ -353,9 +387,9 @@ class Graph {
         this.height = this.ctx.canvas.height
     }
 
-    setIntervalSizeAndLineWidth() {
+    setIntervalSizeAndLineWidth(value) {
         this.intervalSize = this.width / this.nPointsFloat
-        this.ctx.lineWidth = 2 * this.cssScale
+        this.ctx.lineWidth = value * this.cssScale
     }
 
     setStepAndFontSizePixels() {
@@ -405,6 +439,7 @@ class Graph {
     }
 
     drawGraph() {
+      this.ctx.lineWidth = 8;
         for (let i = 0; i < this.noLabels; i++) {
             for (let j = this.nPoints - 1; j > 0; j--) {
                 /* Calculate line coordinates */
@@ -435,11 +470,12 @@ class Graph {
 
         this.clear()
         this.setWidthHeightAndCssScale()
-        this.setIntervalSizeAndLineWidth()
+        
         this.setStepAndFontSizePixels()
-
+        this.setIntervalSizeAndLineWidth(2)
         if (this.vlines) this.drawVerticalLines()
         this.drawHorizontalLines()
+
         if (this.timestamps) this.drawTimestamps()
         this.drawGraph()
     }
@@ -589,7 +625,23 @@ function selectStripChart()
       }
     }
 	
-
+  function updateEverySecond() {
+        
+        if(!pauseScopeFlag){ 
+          console.log (" every second");
+          console.log(Data_Length);       
+            if (Data_Updated == true){
+ 	            for(var Counter = 0; Counter <= Data_Length-1; Counter++)	{ 
+               demograph.update([Test1[Counter], Test2[Counter]]);
+               } 
+             Data_Length = 0;
+             Data_Updated = false;
+             websock.send("Clear_to_send "); 
+            } else 
+            {console.log (" No Data ");websock.send("Clear_to_send ");} 
+        } 
+         
+      }
 
 
 
@@ -653,7 +705,7 @@ function selectStripChart()
 <body onload="javascript:start();"  style="font-family: Lucida Console, Monaco, monospace; background-color: Gray;">
 <div id="toggleMenuElement" style="text-align:center; height: 10vh; margin-top: 2.5vh; margin-bottom: 2.5vh;">
     <div style="display:block; width: 85%; height: 70vh; text-align:center; margin-left:7.5%;"> 
-      <a href =/. ><button id="setScopeButton" class="SetBoxStyle" onclick="selectScope()">
+      <a href =/HOME ><button id="setScopeButton" class="SetBoxStyle" onclick="selectScope()">
         <b>Oscilloscope</b>
       </button></a><!--NOTE: This comment is to prevent white space between inline blocking elements.
      --><button id="setTerminalButton" class="SetBoxStyle" onclick="selectTerminal()">
@@ -703,10 +755,10 @@ function selectStripChart()
           <option value="SCALES">HX711 Scales Ch_A</option> 
           <option value="SCALESB">HX711 Scales Ch_B</option> 
           <option value="INT ADC">Internal ADC (A0)</option>
-          <option value="DIG" selected="selected" >Digital Input (2)</option>
+          <option value="DIG" >Digital Input (2)</option>
           <option value="4V ADC">4V ADC</option>
           <option value="64V ADC">64V ADC</option>
-          <option value="TRIA">Triangle test</option>
+          <option value="TRIANGLE" selected="selected">Triangle test</option>
         </select> </div>
       <div class= "VertSelectBox" > <span class= "SettingsTitle" >Sample Rate (ms)</span> <select id="xScaleSampleRateElement" class="VertBoxStyle" onchange="changeSampleRate();" >
           <option value="1" >1ms fastest</option>
@@ -727,15 +779,13 @@ function selectStripChart()
           <option value="10000">10s</option>
          
           </select> </div>
-      <div class= "VertSelectBox" > <span  class= "SettingsTitle" >Max X Scale</span> <select id="timescaleSelectElement" class="VertBoxStyle" onchange="changeTimeScale();" >
-          <option value="1" >1s</option>
-          <option value="2" >2s</option>
-          <option value="10" selected="selected">10s</option>
-          <option value="20">20s</option>
-          <option value="30">30s</option>
-          <option value="60">1min</option>
-          <option value="300">5min</option>
-          <option value="600">10min</option>
+      <div class= "VertSelectBox" > <span  class= "SettingsTitle" >Interval</span> <select id="IntervalSelectElement" class="VertBoxStyle" onchange="changeInterval();" >
+          <option value="1" >1</option>
+          <option value="2" >2</option>
+           <option value="3" >3</option>
+          <option value="5" selected="selected">5</option>
+          <option value="10">10</option>
+          <option value="20">20</option>
         </select> </div>
       <div class= "VertSelectBox" > <span  class= "SettingsTitle" >Peak Detection</span> <button id="togglePeakDetectionButton" class="VertBoxStyle"  onclick="togglePeakDetection()">
         <b>Peak Detection: Off</b>
@@ -772,27 +822,11 @@ function selectStripChart()
             ["CH1", "CH2"],
             " ", "graphLabels"  );
 
-            GetDataPS();
-
-        /* Update values every xxxx ms */
-       setInterval(updateEverySecond, 50);  
+        // * Run this at very xxxx ms to run demograph update*/
+       //setInterval(updateEverySecond,1000); 
+       //setInterval(UpdateDisplay,1000); // notneeded, built into parseDuplexdata
     
-      function updateEverySecond() {
-        
-      if(!pauseScopeFlag){ 
-        console.log (" every second");
-        console.log(Data_Length);       
-       if (Data_Updated == true){
- 	         for(var Counter = 0; Counter <= Data_Length-1; Counter++)	{ 
-               demograph.update([Test1[Counter], Test2[Counter]]);
-               } 
-            Data_Length = 0;
-            Data_Updated = false;
-            websock.send("Clear_to_send "); 
-          }else {console.log (" No Data ");websock.send("Clear_to_send ");} 
-        }  
-         
-      }
+
 
     </script>
 </body>

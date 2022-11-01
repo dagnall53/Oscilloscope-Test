@@ -207,13 +207,13 @@ void loop() {
     webSocketData = "";
     oldTime = currentTime;
   }
-if ( (currentTime - oldTime) >= getWS_Timer() ) {
-  String json = "{\"KeepAlive\":";
-  json += "100";
-  json += "}";
-  webSocket.broadcastTXT(json.c_str(), json.length());
-  oldTime = currentTime;
-}
+// if ( (currentTime - oldTime) >= getWS_Timer() ) {
+//   String json = "{\"KeepAlive\":";
+//   json += "100";
+//   json += "}";
+//   webSocket.broadcastTXT(json.c_str(), json.length());
+//   oldTime = currentTime;
+// }
 
 
   if ((!PAUSE()) && getDuplexMode() && Data_RTS()  ){
@@ -232,47 +232,11 @@ if ( (currentTime - oldTime) >= getWS_Timer() ) {
 
 
 }
-// Revised
 
 
 
-//   if (webSocketData != "") {
-//     webSocketDataInterpreter(webSocket, webSocketData);
-//     webSocketData = "";
-//     //ADCHandler(0);  // do both channels not neat but doing this after a message allows for chs being turned off and updating the web server
-//     scopeHandler(webSocket);
-//   }
 
-//   if ((getWS_Timer() >= 300) && (!ADC1READ) && (((currentTime - LastSampleTime) >= (getWS_Timer() / 2)))) {
-//     ADCHandler(1);  // Do channels alternately if both ch on and mst timer is long??
-//     ADC1READ = true;
-//   }
 
-//   // if ((currentTime - LastSampleTime) >= getWS_Timer())  //get adc values
-//   // {
-//   //   ADCHandler(3);  // Do D1,D0, ADC channels synchronously  ??
-//   //   LastSampleTime = currentTime;
-//   //   digitalWrite(LED, PHASE);  //DAG LED flashing
-//   //   PHASE = !PHASE;
-//   // }
-
-//   if ((currentTime - LastSampleTime) >= getWS_Timer())  //get adc values
-//   {
-//     if (!ADC1READ) { ADCHandler(1); }
-//     ADCHandler(2);  // Do channels alternately if both ch on and mst timer is long??
-//     ADC1READ = false;
-//     LastSampleTime = currentTime;
-//     digitalWrite(LED, PHASE);  //DAG LED flashing
-//     PHASE = !PHASE;
-
-//     //if(Data_RTS){
-//     // Serial.println(bmp.readTemperature());
-//     // String json = "{\"value\":";
-//     // json += "100";
-//     // json += "}";
-//     // webSocket.broadcastTXT(json.c_str(), json.length());
-//     //Data_RTS = false;
-//     //}
 
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
@@ -306,7 +270,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 }
 
 void WebserverSetup() {
-  server.on("/", handleRoot);
+  server.on("/", handleStrip);
   server.on("/HOME", handleRoot);
   server.on("/DATA", SendDATA);
   server.on("/data", SendDATA);
