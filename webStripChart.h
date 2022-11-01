@@ -190,7 +190,7 @@ var pauseScopeFlag = false;
       }
     }
 
-    function serialEventHandler()
+  function serialEventHandler()
     {
       if(wsMessageArray[1] === "UART")
       {
@@ -303,7 +303,10 @@ function parseDuplexData() {
           demograph.updatePoints( [ parseInt(wsMessageArray[Count])/parseInt(Scale1), parseInt(wsMessageArray[Count+1])/parseInt(Scale2) ] );
           Count++;
 					Data_Length ++;
+        
         }
+        demograph.updateLegends( [ parseInt(wsMessageArray[Count-2])/parseInt(Scale1), parseInt(wsMessageArray[Count-3])/parseInt(Scale2) ]);
+        demograph.updateTimestamps();
       }
     }
   console.log ( " parseDuplexData() reading:%d points",Data_Length );
@@ -712,7 +715,9 @@ function getTimestamp() {
         (d.getMinutes() < 10 ? ":0" : ":") +
         d.getMinutes() +
         (d.getSeconds() < 10 ? ":0" : ":") +
-        d.getSeconds()
+        d.getSeconds() + ":"+
+        d.getMilliseconds() 
+        
 
     return timestampString
 }
