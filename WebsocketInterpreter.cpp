@@ -8,7 +8,9 @@ void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKE
   String topLevelToken = "";
   String subLevelToken = "";
   String serialClear = "SERIAL UART CLEAR";
- // Serial.println("New data received: " + WEBSOCKETDATA);   turn on for debugging!
+//  Serial.println("New data received: " + WEBSOCKETDATA); //  turn on for debugging!
+
+
   
  if(WEBSOCKETDATA.startsWith("Data_accepted"))
   { 
@@ -22,7 +24,19 @@ void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKE
     Set_CTS(true);
 
  }
+if(WEBSOCKETDATA.startsWith("SERIAL_BAUD"))
+  { 
+   topLevelToken = "SERIAL_BAUD";
+   SetBaud(WEBSOCKETDATA.substring(topLevelToken.length()+1).toInt());
+  }
 
+
+
+if(WEBSOCKETDATA.startsWith("SERIAL_OUT"))
+  { 
+   topLevelToken = "SERIAL_OUT";
+   Serial.println ( WEBSOCKETDATA.substring(topLevelToken.length()+1));
+  }
 
   //I2C related tasks
   if(WEBSOCKETDATA.startsWith("I2C"))

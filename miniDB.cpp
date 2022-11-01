@@ -11,6 +11,21 @@ String adcScopeData1;
 String adcScopeData2;
 String channelMode1;
 String channelMode2;
+int _baudRate;
+
+
+// terminal variables
+
+void SetBaud (int input){
+  _baudRate= input;
+  Serial.print("Baud set to:");Serial.println(_baudRate);
+}
+ int BaudRate(){
+  return _baudRate;  
+ }
+
+
+
 
 /////////////////
 //TIMER VARIABLE

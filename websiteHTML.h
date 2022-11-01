@@ -296,6 +296,8 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         } 
       }
     }
+
+    
     function UpdateMST(currentmst , currentuSTimer) {  // update scope plot dimensions / sample times tim
       //var changed = "false;
       //xPlotTotalTimeMax=2;   // default 2 sec update 
@@ -515,6 +517,9 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         }
         document.getElementById("mainBody").focus();
       }
+      console.log("Code 13");
+      websock.send(inputString);
+      
     }
 
     function selectScope()
@@ -528,6 +533,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       currentScreenElement = "TERMINAL";
       updateButtonSelect(currentScreenElement);
     }
+    
     function selectStripChart()
     {
       currentScreenElement = "STRIPCHART";
@@ -633,7 +639,8 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     }
 
     function changeBaudRate()
-    {}
+    { 
+      }
 
     function terminalConnect()
     {
@@ -952,8 +959,9 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         <b>Settings</b>
       </button> </div>
   </div><!--NOTE: This comment is to prevent white space between inline blocking elements.
----><div id="oscilloscopeScreenElement" style="display:inline-block; vertical-align:top; text-align:center; margin-left:7.5%; width: 85%;"> <canvas id="plotElement" style="display: block; width:100%; height:77.5vh; border-radius: 5px;"></canvas> </div><!--NOTE: This comment is to prevent white space between inline blocking elements.
----><div id="terminalScreenElement" style="display:none; width: 85%; height: 80vh; margin-left:7.5%; font-family:Helvetica; vertical-align:top; text-align:center;">
+---><div id="oscilloscopeScreenElement" style="display:inline-block; vertical-align:top; text-align:center; margin-left:7.5%; width: 85%;"> <canvas id="plotElement" style="display: block; width:100%; height:77.5vh; border-radius: 5px;"></canvas> </div>
+<!--NOTE: This comment is to prevent white space between inline blocking elements.--->
+   <div id="terminalScreenElement" style="display:none; width: 85%; height: 80vh; margin-left:7.5%; font-family:Helvetica; vertical-align:top; text-align:center;">
     <div id="terminalOutputWrapper" style="height: 65vh; overflow:auto; background-color:white; border-radius: 5px;">
       <table id="terminalOutput" style="color:#4E4E56; text-align:left;">
         <tr>
@@ -962,7 +970,8 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       </table>
     </div>
     <div style="width: 100%; height:10vh; margin-top:2.5vh; text-align:center;"> <input type="text" id="txtSearch" style="width: 100%; height:10vh; padding:0; border:0; border-radius: 5px; text-decoration: none; text-align:center;" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Enter Text Here" onkeydown="enterText();" /> </div>
-  </div><!--NOTE: This comment is to prevent white space between inline blocking elements.
+  </div>
+  <!--NOTE: This comment is to prevent white space between inline blocking elements.
 ---><div id="i2cScreenElement" style="display:none; width: 85%; height: 80vh; margin-left:7.5%; font-family:Helvetica; vertical-align:top; text-align:center;">
     <div style="display:block; width:100%; height: 65vh; text-align:center;">
       <div id="i2cOutputDeviceWrapper" style="float:left; display: inline-block; width: 49%; height: 65vh; overflow:auto; background-color:white; border-radius: 5px; text-align:center;"> <button style="-webkit-appearance: none; width: 90%; height: 10vh; background-color:white; color:#4E4E56; text-decoration: none; border: 0; padding: 0; border-radius: 5px; font-family:Helvetica;">

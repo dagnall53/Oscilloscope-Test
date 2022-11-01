@@ -1,5 +1,11 @@
 #include <Arduino.h>
 
+// Terminal 
+void SetBaud (int input);
+ int BaudRate();
+
+
+
 //TIMER VARIABLE
 void BROADCAST(String MSG); 
 void setWS_Timer(int TIME);

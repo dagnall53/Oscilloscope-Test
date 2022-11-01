@@ -13,24 +13,240 @@ static const char PROGMEM STRIP_HTML[] = R"rawliteral(
  <script>
  // copied from Original picograph added PS in case of problems
 var wsMessageArray = "";
+
 var Data2,Data1;
 var lastData2,lastData1;
 var Test1 = [];
 var Test2 = [];
 var Data_Length = 0;
 var Data_Updated = false;   
-
-  var pauseScopeFlag = false;
+var xplotInterval= "2";
+var pauseScopeFlag = false;
 
  var toggleSettingsElementFlag = false;
  var currentScreenElement = "STRIPCHART";
 
- var xplotInterval= "2";
+
 
  var xPlotSampleRate = "3000";
  var WebSockTimeIntervalMS ="1000";
  var Scale1 = "38";  // 256/5
  var Scale2 = "100";  // 256/5
+
+ var terminalEchoFlag = false;
+ var dataLogFlag = false;
+ var dataOSDFlag= false;
+ var terminalConnectFlag = true;
+
+
+
+    var inputString = "";
+    var wsMessageArray = "";
+    var i2cDeviceArray = [];
+    var i2cRegisterArray = [];
+    var lastI2CDeviceAddress = null;
+    var lastI2CControlRegister = null;
+   
+
+    //*************I2C************ 
+    function selectI2C()
+    {
+      currentScreenElement = "I2C";
+      updateButtonSelect(currentScreenElement);
+      i2cFindDevices();
+    }
+    function i2cClearDeviceField()
+    {
+      var i2cOutputDeviceWrapperDiv = document.getElementById('i2cOutputDeviceWrapper');
+      i2cOutputDeviceWrapperDiv.innerHTML = '<button style="-webkit-appearance: none; width: 90%; height: 10vh; background-color:white; color:#4E4E56; text-decoration: none; border: 0; padding: 0; border-radius: 5px; font-family:Helvetica;"><b>Devices On I2C Bus</b></button>';
+      i2cOutputDeviceWrapperDiv.scrollTop = i2cOutputDeviceWrapperDiv.scrollHeight;
+    }
+
+    function i2cClearRegisterField()
+    {
+    lastI2CControlRegister = null;
+    document.getElementById("i2cWriteField").placeholder = "Select a register to write";
+      var i2cOutputRegisterWrapperDiv = document.getElementById('i2cOutputRegisterWrapper');
+      i2cOutputRegisterWrapperDiv.innerHTML = '<button style="-webkit-appearance: none; width: 90%; height: 10vh; background-color:white; color:#4E4E56; text-decoration: none; border: 0; padding: 0; border-radius: 5px; font-family:Helvetica;"><b>Internal Device Registers</b></button>';
+      i2cOutputRegisterWrapperDiv.scrollTop = i2cOutputRegisterWrapperDiv.scrollHeight;
+    }
+
+    function i2cFindDevices()
+    {
+      i2cClearDeviceField();
+      i2cClearRegisterField();
+      websock.send("I2C FIND DEVICES");
+    }
+
+    function i2cRequestRegisterRead(deviceAddress)
+    {
+    if(lastI2CDeviceAddress != null)
+    {
+        document.getElementById(lastI2CDeviceAddress).style.backgroundColor = "#E87D75";
+    }
+      document.getElementById("i2cDevice"+deviceAddress).style.backgroundColor = "#4E4E56";
+      i2cClearRegisterField();
+    lastI2CDeviceAddress = "i2cDevice"+deviceAddress;
+      var i2cAddressToRequest = "I2C READ DEVICE ";
+      i2cAddressToRequest += deviceAddress;
+      websock.send(i2cAddressToRequest);
+    }
+    
+  function i2cUpdateControlRegister(controlRegister)
+  {
+    if(lastI2CControlRegister != null)
+    {
+        document.getElementById(lastI2CControlRegister).style.backgroundColor = "#E87D75";
+    }
+      document.getElementById("i2cRegister"+controlRegister).style.backgroundColor = "#4E4E56";
+    lastI2CControlRegister = "i2cRegister"+controlRegister;
+    document.getElementById("i2cWriteField").placeholder = "Write to register 0x"+controlRegister.toString(16).toUpperCase();
+    
+  }
+
+
+
+    //************end I2C
+    //******** terminal *********
+ function toggleTerminalEcho()
+    {
+      if(terminalEchoFlag)
+      {
+        terminalEchoFlag = false;
+        document.getElementById("toggleTerminalEchoButton").innerHTML = "<b>Echo: Off</b>"
+        document.getElementById("toggleTerminalEchoButton").style.backgroundColor = "#E87D75";
+      }
+      else
+      {
+        terminalEchoFlag = true;
+        document.getElementById("toggleTerminalEchoButton").innerHTML = "<b>Echo: On</b>"
+        document.getElementById("toggleTerminalEchoButton").style.backgroundColor = "#4E4E56";
+      }
+    }
+
+
+    
+ function enterText()
+    { 
+      console.log("enterTEXT() ECHO:%o  String is<%o>",terminalEchoFlag, document.getElementById('txtSearch').value);
+      if(event.keyCode == 13)
+      {
+        inputString = document.getElementById('txtSearch').value;
+        if(inputString.localeCompare(""))
+        {
+          if(terminalEchoFlag)
+          {
+            var outputTable = document.getElementById('terminalOutput');
+            var terminalOutputWrapperDiv = document.getElementById('terminalOutputWrapper');
+            outputTable.innerHTML = outputTable.innerHTML + '<tr><td><span style="background-color:#4E4E56; color:white;">Echo</span> ' + inputString + '</tr><td>';
+            terminalOutputWrapperDiv.scrollTop = terminalOutputWrapperDiv.scrollHeight;
+          }
+          inputString = "SERIAL_OUT "+inputString;
+          websock.send(inputString);
+          document.getElementById('txtSearch').value = "";
+          inputString = "";
+        }
+        document.getElementById("mainBody").focus();
+      }
+    }
+
+    function selectTerminal()
+    {
+      currentScreenElement = "TERMINAL";
+      updateButtonSelect(currentScreenElement);
+    }
+
+    function terminalClear()
+    {
+      var outputTable = document.getElementById('terminalOutput');
+      var terminalOutputWrapperDiv = document.getElementById('terminalOutputWrapper');
+      outputTable.innerHTML = '<tr><td></tr><td>';
+      terminalOutputWrapperDiv.scrollTop = terminalOutputWrapperDiv.scrollHeight;
+    }
+
+    function changeBaudRate()
+    {  _BaudRate = document.getElementById("baudSelectElement").value;
+        data2send="";
+        data2send = "SERIAL_BAUD ";
+        data2send += (_BaudRate );  // send Baud
+       websock.send(data2send);
+      }
+
+    function terminalConnect()
+    {
+      if(terminalConnectFlag)
+      {
+        terminalConnectFlag = false;
+        document.getElementById("connectTerminalButton").innerHTML = "<b>Disconnected</b>";
+        document.getElementById("connectTerminalButton").style.backgroundColor = "#E87D75";
+        websock.send("TERMINAL CONNECT OFF");
+      }
+      else
+      {
+        terminalConnectFlag = true;
+        document.getElementById("connectTerminalButton").innerHTML = "<b>Connected</b>";
+        document.getElementById("connectTerminalButton").style.backgroundColor = "#4E4E56";
+        websock.send("TERMINAL CONNECT ON");
+      }
+    }
+
+    function serialEventHandler()
+    {
+      if(wsMessageArray[1] === "UART")
+      {
+        var outputTable = document.getElementById('terminalOutput');
+        var terminalOutputWrapperDiv = document.getElementById('terminalOutputWrapper');
+        var slicedWsMessageArray = wsMessageArray.slice(2).join(' ');
+        outputTable.innerHTML = outputTable.innerHTML + '<tr><td>' + slicedWsMessageArray + '</tr><td>';
+        terminalOutputWrapperDiv.scrollTop = terminalOutputWrapperDiv.scrollHeight;
+        if(wsMessageArray[2] === "CLEAR")
+        {
+          terminalClear();
+        }
+      }
+      if(wsMessageArray[1] === "I2C")
+      {
+        if(wsMessageArray[2] === "DEVICE")
+        {
+          var i2cOutputDeviceWrapperDiv = document.getElementById('i2cOutputDeviceWrapper');
+          i2cOutputDeviceWrapperDiv.innerHTML = i2cOutputDeviceWrapperDiv.innerHTML + '<button id="i2cDevice'+parseInt(wsMessageArray[3], 16)+'" style="-webkit-appearance: none; width: 90%; height: 10vh; margin-bottom:5%; background-color:#E87D75; color:white; text-decoration: none; border: 0; padding: 0; border-radius: 5px; font-family:Helvetica;" onclick="i2cRequestRegisterRead(' + parseInt(wsMessageArray[3], 16) + ')"><b>0x' + wsMessageArray[3].toUpperCase() + '</b></button>';
+        }
+        if(wsMessageArray[2] === "REGISTER")
+        {
+          var i2cOutputRegisterWrapperDiv = document.getElementById('i2cOutputRegisterWrapper');
+          i2cOutputRegisterWrapperDiv.innerHTML = i2cOutputRegisterWrapperDiv.innerHTML + '<button id="i2cRegister'+parseInt(wsMessageArray[3], 16)+'"  style="-webkit-appearance: none; width: 90%; height: 3vh; margin-bottom:2%; background-color:#E87D75; color:white; text-decoration: none; border: 0; padding: 0; border-radius: 5px; font-family:Helvetica;" onclick="i2cUpdateControlRegister(' + parseInt(wsMessageArray[3], 16) + ')"><b>Reading 0x' + wsMessageArray[3].toUpperCase() + ': 0x' + wsMessageArray[4].toUpperCase() + '</b></button>';
+        }
+        if(wsMessageArray[2] === "CLEAR")
+        {
+          i2cClearDeviceField();
+          i2cClearRegisterField();
+        }
+      }
+      if(wsMessageArray[1] === "SETTINGS")
+      {
+        if(wsMessageArray[2] === "YSCALE")
+        {
+          yPlotScaleFactor = parseInt(wsMessageArray[3]);
+          clearPlot();
+        }
+        if(wsMessageArray[2] === "XSCALE")
+        {
+          xPlotScaleFactor = parseInt(wsMessageArray[3]);
+          clearPlot();
+        }
+        if(wsMessageArray[2] === "YMAX")
+        {
+          yPlotMax = parseInt(wsMessageArray[3]);
+          clearPlot();
+        } 
+      }
+    }
+
+
+
+
+
+ 
  
  function start()
     {
@@ -100,7 +316,7 @@ function parseDuplexData() {
 
 function UpdateDisplay(){
   // copy of .update, but without adding data..
-console.log( "UDATE DISPLAY");   
+console.log( "UPDATE DISPLAY");   
   demograph.clear()
   demograph.setWidthHeightAndCssScale()
         
@@ -112,7 +328,13 @@ console.log( "UDATE DISPLAY");
   demograph.drawGraph()
 }
 
+function selectStripChart()
+    {
+      currentScreenElement = "STRIPCHART";
+      updateButtonSelect(currentScreenElement);
+      resetStripChart();
 
+    }
 
  function resetStripChart() {
         websock.send("SCOPE CHANNEL 2 DIG");    // set ch2 = dig  // set first!
@@ -564,12 +786,47 @@ function colorArray(len) {
     return colorArray
 }
 
-function selectStripChart()
-    {
-      currentScreenElement = "OSCILLOSCOPE";
-      updateButtonSelect(currentScreenElement);
 
+ function updateButtonSelect(BUTTON) // may need changing for strip chart
+ {
+    console.log(" updateButtonSelect"); console.log (BUTTON);
+      toggleSettingsElementFlag = true;
+      updateSettingsElementToggle();
+      document.getElementById("setScopeButton").style.backgroundColor = "#E87D75";
+      document.getElementById("setScopeButton").style.color = "white";
+      document.getElementById("setTerminalButton").style.backgroundColor = "#E87D75";
+      document.getElementById("setTerminalButton").style.color = "white";
+      document.getElementById("setStripChartButton").style.backgroundColor = "#E87D75";
+      document.getElementById("setStripChartButton").style.color = "white";
+
+      document.getElementById("setI2CButton").style.backgroundColor = "#E87D75";
+      document.getElementById("setI2CButton").style.color = "white";
+      document.getElementById("oscilloscopeScreenElement").style.display = "none";
+      document.getElementById("terminalScreenElement").style.display = "none";
+      document.getElementById("i2cScreenElement").style.display = "none";
+      
+      if(BUTTON === "TERMINAL")
+      {
+        document.getElementById("setTerminalButton").style.backgroundColor = "white";
+        document.getElementById("setTerminalButton").style.color = "#4E4E56";
+        document.getElementById("terminalScreenElement").style.display = "block";
+      }
+      if(BUTTON === "STRIPCHART")
+      {
+        document.getElementById("setStripChartButton").style.backgroundColor = "white";
+        document.getElementById("setStripChartButton").style.color = "#4E4E56";
+        document.getElementById("oscilloscopeScreenElement").style.display = "block";
+      }
+
+      if(BUTTON === "I2C")
+      {
+        document.getElementById("setI2CButton").style.backgroundColor = "white";
+        document.getElementById("setI2CButton").style.color = "#4E4E56";
+        document.getElementById("i2cScreenElement").style.display = "block";
+      }
     }
+
+
 
   function updateSettingsElementToggle()
     {
@@ -702,7 +959,7 @@ function selectStripChart()
 
 
 
-<body onload="javascript:start();"  style="font-family: Lucida Console, Monaco, monospace; background-color: Gray;">
+<body onload="javascript:start();" id="mainBody" style="font-family: Lucida Console, Monaco, monospace; background-color: Gray;">
 <div id="toggleMenuElement" style="text-align:center; height: 10vh; margin-top: 2.5vh; margin-bottom: 2.5vh;">
     <div style="display:block; width: 85%; height: 70vh; text-align:center; margin-left:7.5%;"> 
       <a href =/HOME ><button id="setScopeButton" class="SetBoxStyle" onclick="selectScope()">
@@ -711,7 +968,7 @@ function selectStripChart()
      --><button id="setTerminalButton" class="SetBoxStyle" onclick="selectTerminal()">
         <b>Terminal</b>
       </button><!--NOTE: This comment is to prevent white space between inline blocking elements.
-    --><button  id="setStripChartButton" class="SetBoxStyle" style="background-color:white; color:black !important" onclick="resetStripChart()">
+    --><button  id="setStripChartButton" class="SetBoxStyle" style="background-color:white; color:black !important" onclick="selectStripChart()">
         <b>StripChart</b> 
       </button><!--NOTE: This comment is to prevent white space between inline blocking elements.
      --><button id="setI2CButton" class="SetBoxStyle" onclick="selectI2C()">
@@ -722,7 +979,7 @@ function selectStripChart()
       </button> 
       </div>
   </div><!--NOTE: This comment is to prevent white space between inline blocking elements.-->
-    <div id="graphLabels" >   Extra text to be added here later:  </div></div>
+    <div id="graphLabels" >   Extra text to be added here later: id= "Data_Length"  </div></div>
     <!-- div for legends/labels -->
   <div id="oscilloscopeScreenElement" style="display:inline-block; vertical-align:top; text-align:center; margin-left:7.5%; width: 85%;">
     <!-- Canvas for the graph also click to get to previous page -->
@@ -735,6 +992,33 @@ function selectStripChart()
     <!-- div for legends/labels -->
    
     <!-- // NEW STUFF-->
+    <!--NOTE: This comment is to prevent white space between inline blocking elements.--->
+   <div id="terminalScreenElement" style="display:none; width: 85%; height: 80vh; margin-left:7.5%; font-family:Helvetica; vertical-align:top; text-align:center;">
+    <div id="terminalOutputWrapper" style="height: 65vh; overflow:auto; background-color:white; border-radius: 5px;">
+      <table id="terminalOutput" style="color:#4E4E56; text-align:left;">
+        <tr>
+          <td></td>
+        </tr>
+      </table>
+    </div>
+    <div style="width: 100%; height:10vh; margin-top:2.5vh; text-align:center;"> 
+       <input type="text" id="txtSearch" style="width: 100%; height:10vh; padding:0; border:0; border-radius: 5px; text-decoration: none; text-align:center;" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Enter Text Here" onkeydown="enterText();" /> </div>
+  </div>
+  <!--NOTE: This comment is to prevent white space between inline blocking elements.--->
+  <div id="i2cScreenElement" style="display:none; width: 85%; height: 80vh; margin-left:7.5%; font-family:Helvetica; vertical-align:top; text-align:center;">
+    <div style="display:block; width:100%; height: 65vh; text-align:center;">
+      <div id="i2cOutputDeviceWrapper" style="float:left; display: inline-block; width: 49%; height: 65vh; overflow:auto; background-color:white; border-radius: 5px; text-align:center;"> <button style="-webkit-appearance: none; width: 90%; height: 10vh; background-color:white; color:#4E4E56; text-decoration: none; border: 0; padding: 0; border-radius: 5px; font-family:Helvetica;">
+          <b>Devices On I2C Bus</b>
+        </button></div>
+        <!--NOTE: This comment is to prevent white space between inline blocking elements. -->
+          <div id="i2cOutputRegisterWrapper" style="float:right; display: inline-block; width: 49%; height: 65vh; overflow:auto; background-color:white; border-radius: 5px; text-align:center;"> <button style="-webkit-appearance: none; width: 90%; height: 10vh; background-color:white; color:#4E4E56; text-decoration: none; border: 0; padding: 0; border-radius: 5px; font-family:Helvetica;">
+          <b>Internal Device Registers</b>
+        </button> </div>
+  </div>
+  <div style="width: 100%; height:10vh; margin-top:2.5vh; text-align:center;"> 
+    <input type="number" id="i2cWriteField" style="width: 100%; height:10vh; padding:0; border:0; border-radius: 5px; text-decoration: none; text-align:center;" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Write to register"/>
+  </div>
+</div>
 <div id="settingsScreenElement" style="width: 33%; display:none; height: 77.5vh; font-family:Helvetica; vertical-align:top; text-align:center; background-color:white; color:#4E4E56; border-radius:5px; margin-left:2%;"><!--NOTE: This comment is to prevent white space between inline blocking elements.
   ---><div id="scopeSettingsElement" style="display:block; width:100%; height:77.5vh; overflow-y:auto; ">
       <div class= "VertSelectBox"  > <span class= "SettingsTitle" >Pause</span> <button id="togglePauseButton" class="VertBoxStyle" onclick="togglePause()">
@@ -801,7 +1085,7 @@ function selectStripChart()
       <div class= "VertSelectBox" > <span  class= "SettingsTitle" >Connect</span> <button id="connectTerminalButton" class="VertBoxStyle"  onclick="terminalConnect()">
         <b>Connected</b>
       </button> </div>
-      <div class= "VertSelectBox" > <span  class= "SettingsTitle" >Baud Rate</span> <select id="channelSelectElement1" class="VertBoxStyle"  onchange="changeBaudRate();">
+      <div class= "VertSelectBox" > <span  class= "SettingsTitle" >Baud Rate</span> <select id="baudSelectElement" class="VertBoxStyle"  onchange="changeBaudRate();">
         <option value="115200" selected="selected">115200</option>
         <option value="57600">57600</option>
         <option value="9600">9600</option>
