@@ -54,16 +54,16 @@ var pauseScopeFlag = false;
 
 //*********  Data Display ******
 //function createLegendRect(labelDivID, color, label, valueID) {
-function createDataRect(labelDivID) {
+function createDataRect(labelDivID,color) {
  // <svg width="10" height="10">
- //               <rect width="10" height="10" style="fill: ${color}"/>
- //           </svg> 
+  //              <rect width="10" height="10" style="fill: ${color}"/>
+   //         </svg> 
   byID(labelDivID).innerHTML += `
         <div style="display: inline-block color=demograph.graph.colors[0]">
             CH1:
             ${CHSource[0]}
             ${Scale[0]} 
-         <div style="display: inline-block color=demograph.graph.colors[1]">   
+    
             CH2:
             ${CHSource[1]}
             ${Scale[1]}
@@ -509,10 +509,11 @@ function createGraph(
         vlinesFreq,
         autoScaleMode
     )
-    createDataRect("EXTRA_DATA");
-    for (let i = 0; i < labels.length; i++)
+    
+    for (let i = 0; i < labels.length; i++) {
+      //  createDataRect(CHSource[i],graph.colors[i]);
         createLegendRect(labelDivID, graph.colors[i], labels[i] + ":", valueIDs[i])
-
+      }
     return graph
 }
 
