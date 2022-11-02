@@ -491,7 +491,8 @@ function createGraph(
     timestamps = true,
     scalesteps = 10,
     vlinesFreq = 50,
-    autoScaleMode = 0
+    autoScaleMode = 0,
+    CH_source
 ) {
     const valueIDs = createValueIDs(labels, canvasID)
 
@@ -507,7 +508,8 @@ function createGraph(
         timestamps,
         scalesteps,
         vlinesFreq,
-        autoScaleMode
+        autoScaleMode,
+        CH_source
     )
     createDataRect("EXTRA_DATA",CHSource[0]);
     for (let i = 0; i < labels.length; i++) {
@@ -531,7 +533,8 @@ class Graph {
         timestamps,
         scalesteps,
         vlinesFreq,
-        autoScaleMode
+        autoScaleMode,
+        CH_source
     ) {
         this.canvas = byID(canvasID)
         this.ctx = this.canvas.getContext("2d")
@@ -548,6 +551,7 @@ class Graph {
 
         this.noLabels = noLabels
         this.valueIDs = valueIDs
+        this.CH_source = CH_source
         this.unit = unit
 
         this.timestampsArray = emptyArray(this.nPoints, "")
@@ -614,6 +618,7 @@ class Graph {
      // console.log ( values )
         for (let i = 0; i < this.noLabels; i++)
              byID(this.valueIDs[i]).innerHTML = values[i].toFixed(2) + " " + this.unit
+             byID(this.CH_source[i]).innerHTML = CHSource[i] + " " + this.unit
     }
 
     updateTimestamps() {
