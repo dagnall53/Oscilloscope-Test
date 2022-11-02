@@ -53,9 +53,10 @@ var pauseScopeFlag = false;
     var lastI2CControlRegister = null;
 
 //*********  Data Display ******
-//function createLegendRect(labelDivID, color, label, valueID) {
+//function createLegendRect(labelDivID, color, label, valueID,i) {
 function createDataRect() {
-   byID("EXTRA_DATA").innerHTML += `CH1:<span id="CH1Source">${CHSource[0]}</span> CH2:<span id="CH2Source">${CHSource[1]}</span>`   
+   byID("EXTRA_DATA").innerHTML += `CH1(<span id="CH_SourceID[0]">${CHSource[0]}</span>):  
+   CH2(<span id="CH_SourceID[1]">${CHSource[1]}</span>):<br> `   
  }
  
 function displayMyVar(targetElementId) {
@@ -399,7 +400,7 @@ function checkforSPSTiming( element){
       channelSelect1 += CHSource[0];
       websock.send(channelSelect1);
       checkforSPSTiming(CHSource[0]);
-      document.getElementById("CH1Source").innerHTML=CHSource[0];
+      document.getElementById("CH_SourceID[0]").innerHTML=CHSource[0];
     }
 
  function changeChannelSelect2()
@@ -409,7 +410,7 @@ function checkforSPSTiming( element){
       channelSelect2 += CHSource[1];
       websock.send(channelSelect2);
       checkforSPSTiming(CHSource[1]);
-      document.getElementById("CH2Source").innerHTML=CHSource[1];      
+      document.getElementById("CH_SourceID[1]").innerHTML=CHSource[1];      
     }
     
 
@@ -451,17 +452,17 @@ function createValueIDs(labels, canvasID) {
 
     return valueIDs
 }
-function createLegendRect(labelDivID, color, label, valueID) {
+function createLegendRect(labelDivID, color, label, valueID,i) {
  // console.log( "in the LEGEND rectangle");
     const labelSpan = `<span>${label}</span>`
+    const sourceSpan = `<span id="CH_SourceID[i]">${CHSource[i]}</span>` 
     const valueSpan = label.at(-1) == ":" ? `<span id="${valueID}"></span>` : ""
     byID(labelDivID).innerHTML += `
         <div style="display: inline-block;">
             <svg width="10" height="10">
                 <rect width="10" height="10" style="fill: ${color}"/>
             </svg> 
-            ${labelSpan}
-            ${valueSpan}
+            ${labelSpan}(${sourceSpan}):${valueSpan}  
             
         <div>
     `
@@ -470,7 +471,7 @@ function createLegendRect(labelDivID, color, label, valueID) {
 function createGraph(
     canvasID,
     labels,
-    unit,
+    units,
     labelDivID,
     intervalSize = 3,
     maxVal = 10,
@@ -487,7 +488,7 @@ function createGraph(
         canvasID,
         labels.length,
         valueIDs,
-        unit,
+        units,
         intervalSize,
         maxVal,
         minVal,
@@ -499,7 +500,7 @@ function createGraph(
     )
     createDataRect();
     for (let i = 0; i < labels.length; i++) {
-           createLegendRect(labelDivID, graph.colors[i], labels[i] + ":", valueIDs[i])
+           createLegendRect(labelDivID, graph.colors[i], labels[i] + ":", valueIDs[i], i)
       }
     return graph
 }
@@ -510,7 +511,7 @@ class Graph {
         canvasID,
         noLabels,
         valueIDs,
-        unit,
+        units,
         intervalSize,
         maxVal,
         minVal,
@@ -536,7 +537,7 @@ class Graph {
 
         this.noLabels = noLabels
         this.valueIDs = valueIDs
-        this.unit = unit
+        this.units = units
 
         this.timestampsArray = emptyArray(this.nPoints, "")
 
@@ -601,7 +602,7 @@ class Graph {
     updateLegends(values) {
      // console.log ( values )
         for (let i = 0; i < this.noLabels; i++)
-             byID(this.valueIDs[i]).innerHTML = values[i].toFixed(2) + " " + this.unit;
+             byID(this.valueIDs[i]).innerHTML = values[i].toFixed(2) + " " + this.units[i];
     }
 
     updateTimestamps() {
@@ -650,7 +651,7 @@ class Graph {
 
     drawHorizontalLines() {
         let entityDecode = document.createElement("textarea")
-        entityDecode.innerHTML = this.unit
+        entityDecode.innerHTML = this.units[0]
 
         for (let i = 1; i <= this.scalesteps; i++) {
             const y = this.height - i * this.hstep
@@ -1132,7 +1133,7 @@ function colorArray(len) {
         /* Create graph using picograph   */
         let demograph = createGraph("graphDemo",
             ["CH1", "CH2"],
-            " ", "graphLabels"  );
+            ["volts","kG"], "graphLabels"  );
 
         // * Run this at very xxxx ms to run demograph update*/
        //setInterval(updateEverySecond,1000); 
