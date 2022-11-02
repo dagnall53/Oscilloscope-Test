@@ -30,8 +30,13 @@ var pauseScopeFlag = false;
 
  var xPlotSampleRate = "3000";
  var WebSockTimeIntervalMS ="1000";
- var Scale1 = "38";  // 256/5
- var Scale2 = "100";  // 256/5
+ var Scale =[];
+     Scale[0] = "38";  // CH 1  256/5
+     Scale[1] = "100";  // CH2   256/5
+
+ var CHSource =[];
+     CHSource[0] = "INT ADC";
+     CHSource[1] = "TRIANGLE";     
 
  var terminalEchoFlag = false;
  var dataLogFlag = false;
@@ -46,6 +51,31 @@ var pauseScopeFlag = false;
     var i2cRegisterArray = [];
     var lastI2CDeviceAddress = null;
     var lastI2CControlRegister = null;
+
+//*********  Data Display ******
+//function createLegendRect(labelDivID, color, label, valueID) {
+function createDataRect(labelDivID) {
+ // <svg width="10" height="10">
+ //               <rect width="10" height="10" style="fill: ${color}"/>
+ //           </svg> 
+  byID(labelDivID).innerHTML += `
+        <div style="display: inline-block color=demograph.graph.colors[0]">
+            CH1:
+            ${CHSource[0]}
+            ${Scale[0]} 
+         <div style="display: inline-block color=demograph.graph.colors[1]">   
+            CH2:
+            ${CHSource[1]}
+            ${Scale[1]}
+            
+        <div>
+    `   
+ }
+ 
+function displayMyVar(targetElementId) {
+                document.getElementById(targetElementId).innerHTML = myVar;
+            }
+
    
 
     //*************I2C************ 
@@ -255,13 +285,8 @@ var pauseScopeFlag = false;
       websock.onopen = function(evt)
       {
         console.log('websock open');
-        websock.send("SCOPE DUPLEX 2  TRIANGLE");    // set ch2 = TRIANGLE  // note double space after 1 or 2 
-        websock.send("SCOPE DUPLEX 1  INT ADC"); // set duplex and ch 1 = INT 
-        websock.send("SCOPE Sample_uS 10000");  // dag note max rate ? about 3ms for internal
-        websock.send("SCOPE WS_Timer 200");
-        websock.send("Data_accepted "); // sets up flags
-        websock.send("Clear_to_send ");   // initiates first websock send.. 
-        websock.send("PicoGraph setup Finished "); 
+        InitialSetStripChart();
+        
       };
       websock.onclose = function(evt)
       {
@@ -300,16 +325,18 @@ function parseDuplexData() {
       if(wsMessageArray.length > 3) { 
         Data_Length=0; 
 				for(var Count = 3; Count <= (wsMessageArray.length-1); Count++)	{ 
-          demograph.updatePoints( [ parseInt(wsMessageArray[Count])/parseInt(Scale1), parseInt(wsMessageArray[Count+1])/parseInt(Scale2) ] );
+          demograph.updatePoints( [ parseInt(wsMessageArray[Count])/parseInt(Scale[0]), parseInt(wsMessageArray[Count+1])/parseInt(Scale[1]) ] );
           Count++;
 					Data_Length ++;
         
         }
-        demograph.updateLegends( [ parseInt(wsMessageArray[Count-2])/parseInt(Scale1), parseInt(wsMessageArray[Count-3])/parseInt(Scale2) ]);
+        // note use 3 and 4 as index to get first sample only
+        demograph.updateLegends( [ parseInt(wsMessageArray[3])/parseInt(Scale[0]), parseInt(wsMessageArray[4])/parseInt(Scale[1]) ]);
         demograph.updateTimestamps();
       }
     }
   console.log ( " parseDuplexData() reading:%d points",Data_Length );
+  // NOT HERE! createDataRect("EXTRA_DATA");
   UpdateDisplay();
    
   } 
@@ -335,18 +362,23 @@ function selectStripChart()
     {
       currentScreenElement = "STRIPCHART";
       updateButtonSelect(currentScreenElement);
-      resetStripChart();
+      ClearStripChart();
 
     }
 
- function resetStripChart() {
-        websock.send("SCOPE CHANNEL 2 DIG");    // set ch2 = dig  // set first!
-        websock.send("SCOPE DUPLEX 1  INT ADC"); // set duplex and ch 1 = INT ADC
-        websock.send("SCOPE Sample_uS 10000");  // dag note max rate ? about 10ms for internal
-        
-        websock.send("Data_accepted "); // Clears up flags
+ function ClearStripChart(){
+       websock.send("Data_accepted "); // Clears up flags
         websock.send("Clear_to_send ");   // should initiate first websock send.. 
         websock.send("PicoGraph setup Finished "); 
+ }   
+
+ function InitialSetStripChart() {
+        websock.send("SCOPE DUPLEX 2  TRIANGLE");    // set ch2 = TRIANGLE  // note double space after 1 or 2 
+        websock.send("SCOPE DUPLEX 1  INT ADC"); // set duplex and ch 1 = INT 
+        websock.send("SCOPE Sample_uS 10000");  // dag note max rate ? about 3ms for internal
+        websock.send("SCOPE WS_Timer 200");
+        ClearStripChart();
+         
  }
  
  function changeSampleRate() {
@@ -374,19 +406,22 @@ function checkforSPSTiming( element){
  }
 
  function changeChannelSelect1()
-    {
+    { console.log ("was:");console.log (CHSource[0]);
+      CHSource[0] =  document.getElementById("channelSelectElement1").value;
+      console.log (CHSource[0]);
       channelSelect1 = "SCOPE DUPLEX 1  "; // note two spaces
-      channelSelect1 += document.getElementById("channelSelectElement1").value;
+      channelSelect1 += CHSource[0];
       websock.send(channelSelect1);
-      checkforSPSTiming(document.getElementById("channelSelectElement1").value);
+      checkforSPSTiming(CHSource[0]);
     }
 
  function changeChannelSelect2()
     {
+      CHSource[1] =  document.getElementById("channelSelectElement2").value;
       channelSelect2 = "SCOPE DUPLEX 2  ";
-      channelSelect2 += document.getElementById("channelSelectElement2").value;
+      channelSelect2 += CHSource[1];
       websock.send(channelSelect2);
-      checkforSPSTiming(document.getElementById("channelSelectElement1").value);
+      checkforSPSTiming(CHSource[1]);
       
     }
     
@@ -432,7 +467,6 @@ function createValueIDs(labels, canvasID) {
 function createLegendRect(labelDivID, color, label, valueID) {
     const labelSpan = `<span>${label}</span>`
     const valueSpan = label.at(-1) == ":" ? `<span id="${valueID}"></span>` : ""
-
     byID(labelDivID).innerHTML += `
         <div style="display: inline-block;">
             <svg width="10" height="10">
@@ -440,6 +474,7 @@ function createLegendRect(labelDivID, color, label, valueID) {
             </svg> 
             ${labelSpan}
             ${valueSpan}
+            
         <div>
     `
 }
@@ -474,7 +509,7 @@ function createGraph(
         vlinesFreq,
         autoScaleMode
     )
-
+    createDataRect("EXTRA_DATA");
     for (let i = 0; i < labels.length; i++)
         createLegendRect(labelDivID, graph.colors[i], labels[i] + ":", valueIDs[i])
 
@@ -577,7 +612,7 @@ class Graph {
     updateLegends(values) {
      // console.log ( values )
         for (let i = 0; i < this.noLabels; i++)
-            byID(this.valueIDs[i]).innerHTML = values[i].toFixed(2) + " " + this.unit
+             byID(this.valueIDs[i]).innerHTML = values[i].toFixed(2) + " " + this.unit
     }
 
     updateTimestamps() {
@@ -715,8 +750,7 @@ function getTimestamp() {
         (d.getMinutes() < 10 ? ":0" : ":") +
         d.getMinutes() +
         (d.getSeconds() < 10 ? ":0" : ":") +
-        d.getSeconds() + ":"+
-        d.getMilliseconds() 
+        d.getSeconds() 
         
 
     return timestampString
@@ -984,7 +1018,7 @@ function colorArray(len) {
       </button> 
       </div>
   </div><!--NOTE: This comment is to prevent white space between inline blocking elements.-->
-    <div id="graphLabels" >   Extra text to be added here later: id= "Data_Length"  </div></div>
+    <div id="graphLabels" > <span id="EXTRA_DATA";></span> </div></div>
     <!-- div for legends/labels -->
   <div id="oscilloscopeScreenElement" style="display:inline-block; vertical-align:top; text-align:center; margin-left:7.5%; width: 85%;">
     <!-- Canvas for the graph also click to get to previous page -->
