@@ -54,10 +54,9 @@ var pauseScopeFlag = false;
 
 //*********  Data Display ******
 //function createLegendRect(labelDivID, color, label, valueID) {
-function createDataRect(labelDivID,color) {
- // <svg width="10" height="10">
-  //              <rect width="10" height="10" style="fill: ${color}"/>
-   //         </svg> 
+function createDataRect(labelDivID,sourceID) {
+ // console.log( "in the data rectangle");
+ //const sourceSpan = label.at(-1) == ":" ? `<span id="${sourceID}"></span>` : ""
   byID(labelDivID).innerHTML += `
         <div style="display: inline-block color=demograph.graph.colors[0]">
             CH1:
@@ -335,7 +334,7 @@ function parseDuplexData() {
         demograph.updateTimestamps();
       }
     }
-  console.log ( " parseDuplexData() reading:%d points",Data_Length );
+  // console.log ( " parseDuplexData() reading:%d points",Data_Length );
   // NOT HERE! createDataRect("EXTRA_DATA");
   UpdateDisplay();
    
@@ -346,7 +345,7 @@ function parseDuplexData() {
 
 function UpdateDisplay(){
   // copy of .update, but without adding data..
-console.log( "UPDATE DISPLAY");   
+//console.log( "UPDATE DISPLAY");   
   demograph.clear()
   demograph.setWidthHeightAndCssScale()
         
@@ -465,6 +464,7 @@ function createValueIDs(labels, canvasID) {
     return valueIDs
 }
 function createLegendRect(labelDivID, color, label, valueID) {
+ // console.log( "in the LEGEND rectangle");
     const labelSpan = `<span>${label}</span>`
     const valueSpan = label.at(-1) == ":" ? `<span id="${valueID}"></span>` : ""
     byID(labelDivID).innerHTML += `
@@ -509,7 +509,7 @@ function createGraph(
         vlinesFreq,
         autoScaleMode
     )
-    
+    createDataRect("EXTRA_DATA",CHSource[0]);
     for (let i = 0; i < labels.length; i++) {
       //  createDataRect(CHSource[i],graph.colors[i]);
         createLegendRect(labelDivID, graph.colors[i], labels[i] + ":", valueIDs[i])
