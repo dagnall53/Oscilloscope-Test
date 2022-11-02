@@ -54,21 +54,8 @@ var pauseScopeFlag = false;
 
 //*********  Data Display ******
 //function createLegendRect(labelDivID, color, label, valueID) {
-function createDataRect(labelDivID,sourceID) {
- // console.log( "in the data rectangle");
- //const sourceSpan = label.at(-1) == ":" ? `<span id="${sourceID}"></span>` : ""
-  byID(labelDivID).innerHTML += `
-        <div style="display: inline-block color=demograph.graph.colors[0]">
-            CH1:
-            ${CHSource[0]}
-            ${Scale[0]} 
-    
-            CH2:
-            ${CHSource[1]}
-            ${Scale[1]}
-            
-        <div>
-    `   
+function createDataRect() {
+   byID("EXTRA_DATA").innerHTML += `CH1:<span id="CH1Source">${CHSource[0]}</span> CH2:<span id="CH2Source">${CHSource[1]}</span>`   
  }
  
 function displayMyVar(targetElementId) {
@@ -297,7 +284,7 @@ function displayMyVar(targetElementId) {
       };
       websock.onmessage = function(evt)
       {
-        console.log(evt);
+        //console.log(evt);
         wsMessageArray = evt.data.split(" ");
         if(wsMessageArray.length >= 2)
         {
@@ -412,6 +399,7 @@ function checkforSPSTiming( element){
       channelSelect1 += CHSource[0];
       websock.send(channelSelect1);
       checkforSPSTiming(CHSource[0]);
+      document.getElementById("CH1Source").innerHTML=CHSource[0];
     }
 
  function changeChannelSelect2()
@@ -421,7 +409,7 @@ function checkforSPSTiming( element){
       channelSelect2 += CHSource[1];
       websock.send(channelSelect2);
       checkforSPSTiming(CHSource[1]);
-      
+      document.getElementById("CH2Source").innerHTML=CHSource[1];      
     }
     
 
@@ -491,8 +479,7 @@ function createGraph(
     timestamps = true,
     scalesteps = 10,
     vlinesFreq = 50,
-    autoScaleMode = 0,
-    CH_source
+    autoScaleMode = 0
 ) {
     const valueIDs = createValueIDs(labels, canvasID)
 
@@ -508,13 +495,11 @@ function createGraph(
         timestamps,
         scalesteps,
         vlinesFreq,
-        autoScaleMode,
-        CH_source
+        autoScaleMode
     )
-    createDataRect("EXTRA_DATA",CHSource[0]);
+    createDataRect();
     for (let i = 0; i < labels.length; i++) {
-      //  createDataRect(CHSource[i],graph.colors[i]);
-        createLegendRect(labelDivID, graph.colors[i], labels[i] + ":", valueIDs[i])
+           createLegendRect(labelDivID, graph.colors[i], labels[i] + ":", valueIDs[i])
       }
     return graph
 }
@@ -533,8 +518,8 @@ class Graph {
         timestamps,
         scalesteps,
         vlinesFreq,
-        autoScaleMode,
-        CH_source
+        autoScaleMode
+
     ) {
         this.canvas = byID(canvasID)
         this.ctx = this.canvas.getContext("2d")
@@ -551,7 +536,6 @@ class Graph {
 
         this.noLabels = noLabels
         this.valueIDs = valueIDs
-        this.CH_source = CH_source
         this.unit = unit
 
         this.timestampsArray = emptyArray(this.nPoints, "")
@@ -617,14 +601,13 @@ class Graph {
     updateLegends(values) {
      // console.log ( values )
         for (let i = 0; i < this.noLabels; i++)
-             byID(this.valueIDs[i]).innerHTML = values[i].toFixed(2) + " " + this.unit
-             byID(this.CH_source[i]).innerHTML = CHSource[i] + " " + this.unit
+             byID(this.valueIDs[i]).innerHTML = values[i].toFixed(2) + " " + this.unit;
     }
 
     updateTimestamps() {
-        const timestampString = getTimestamp()
+        const timestampString = getTimestamp();
 
-        this.timestampsArray = shiftArrayLeft(this.timestampsArray, timestampString)
+        this.timestampsArray = shiftArrayLeft(this.timestampsArray, timestampString);
     }
 
     drawVerticalLines() {
