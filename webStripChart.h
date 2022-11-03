@@ -38,6 +38,8 @@ var pauseScopeFlag = false;
      CHSource[0] = "INT ADC";
      CHSource[1] = "TRIANGLE";     
 
+ var sampleRate = 10000; // just a temporary setup   
+
  var terminalEchoFlag = false;
  var dataLogFlag = false;
  var dataOSDFlag= false;
@@ -55,7 +57,8 @@ var pauseScopeFlag = false;
 //*********  Data Display ******
 //function createLegendRect(labelDivID, color, label, valueID,i) {
 function createDataRect() {
-   byID("EXTRA_DATA").innerHTML += `CH1(<span id="CH_SourceID[0]">${CHSource[0]}</span>):  
+   byID("EXTRA_DATA").innerHTML += `SPS(<span id="SPS_SourceID">${xPlotSampleRate}</span>
+     CH1(<span id="CH_SourceID[0]">${CHSource[0]}</span>):  
    CH2(<span id="CH_SourceID[1]">${CHSource[1]}</span>):<br> `   
  }
  
@@ -367,14 +370,23 @@ function selectStripChart()
         ClearStripChart();
          
  }
+
+ //*********Timing changes
  
  function changeSampleRate() {
-        xPlotSampleRate = document.getElementById("xScaleSampleRateElement").value;
+       xPlotSampleRate = document.getElementById("xScaleSampleRateElement").value;
+       SampleRateUpdate(xPlotSampleRate);
+        }
+ function SampleRateUpdate(INPUT){
         data2send="";
         data2send = "SCOPE Sample_uS ";
-        data2send += (xPlotSampleRate * 1000);  // send in us  CHANGE LATER to actual us 
+        data2send += ( INPUT * 1000);  // send in us  CHANGE LATER to actual us 
        websock.send(data2send);
-     }
+       document.getElementById("SPS_SourceID").innerHTML=INPUT;
+       console.log("SPS updated");console.log(INPUT);
+ }    
+
+
      function changeInterval() {
         xPlotInterval = document.getElementById("IntervalSelectElement").value;
      }
@@ -382,12 +394,10 @@ function selectStripChart()
 function checkforSPSTiming( element){
   //console.log(" SPScheck "); console.log(element);
   if ( (element = "SCALES")|| (element = "SCALESB") ) {        // will need to check for other names as well ?
+         document.getElementById("xScaleSampleRateElement").value=20;  // change the select box 
          xPlotSampleRate = 20;
-         data2send="";
-         data2send = "SCOPE Sample_uS ";
-         data2send += (xPlotSampleRate * 1000);  // send in us  CHANGE LATER to actual us 
-       websock.send(data2send);
-       console.log("FORCING slower SPS %d ms for HX 711",xPlotSampleRate);
+         SampleRateUpdate(xPlotSampleRate);
+         console.log("FORCING slower SPS %d ms for HX 711",xPlotSampleRate);
        }
   
  }
