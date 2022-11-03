@@ -293,8 +293,8 @@ void ADCHandler(void) {  // DUPLEX MODE reads BOTH channels and builds up the st
    // addADCScopeData1(String(ChannelRead1(), DEC)); addADCScopeData1(String(NumberofSamplesRead, DEC));       // addADCScopeData1(String(ChannelRead2(), DEC));
     addADCScopeData1(String(ChannelRead1(), DEC));  addADCScopeData1(String(ChannelRead2(), DEC));
     NumberofSamplesRead++;  
-    if (every(NumberofSamplesRead,50) )  {Serial.print("-");} 
-    if (every(NumberofSamplesRead,MAX_Samples) )  {Serial.println("-");}
+  //  if (every(NumberofSamplesRead,50) )  {Serial.print("-");} 
+  //  if (every(NumberofSamplesRead,MAX_Samples) )  {Serial.println("-");}
     if (NumberofSamplesRead >= MAX_Samples) {Set_Data_RTS(true);}// limit number of samples that can be sent in a duplex websock message
     if (getsampleuSTimer() >= 5000) {Set_Data_RTS(true);} // ?? Allow faster update rate for slow samples per second
   } else 

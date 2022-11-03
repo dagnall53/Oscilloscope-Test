@@ -28,8 +28,14 @@ var pauseScopeFlag = false;
 
 
 
- var xPlotSampleRate = "3000";
+ var xPlotSampleRate = "?";
+ var xPlotSampleRateHZ = "?";
+ var xPlotSampleRatePerDiv = "?";
+
+ 
  var WebSockTimeIntervalMS ="1000";
+
+
  var Scale =[];
      Scale[0] = "38";  // CH 1  256/5
      Scale[1] = "100";  // CH2   256/5
@@ -56,11 +62,15 @@ var pauseScopeFlag = false;
 
 //*********  Data Display ******
 //function createLegendRect(labelDivID, color, label, valueID,i) {
-function createDataRect() {
-   byID("EXTRA_DATA").innerHTML += `SPS(<span id="SPS_SourceID">${xPlotSampleRate}</span>
-     CH1(<span id="CH_SourceID[0]">${CHSource[0]}</span>):  
-   CH2(<span id="CH_SourceID[1]">${CHSource[1]}</span>):<br> `   
- }
+// <-- //CH1(<span id="CH_SourceID[0]">${CHSource[0]}</span>):  
+//CH2(<span id="CH_SourceID[1]">${CHSource[1]}</span>):<br> --> 
+//SPS:(<span id="SPS_SourceID">${xPlotSampleRate}</span>)
+  function createDataRect() {
+   byID("EXTRA_DATA").innerHTML += `
+   Sample Rate:(<span id="SPS_HZSourceID">${xPlotSampleRateHZ}</span>)
+   = <span id="SPS_PerDivSourceID">${xPlotSampleRatePerDiv}</span> PerDiv
+   <br>  `   
+  } 
  
 function displayMyVar(targetElementId) {
                 document.getElementById(targetElementId).innerHTML = myVar;
@@ -365,37 +375,45 @@ function selectStripChart()
  function InitialSetStripChart() {
         websock.send("SCOPE DUPLEX 2  TRIANGLE");    // set ch2 = TRIANGLE  // note double space after 1 or 2 
         websock.send("SCOPE DUPLEX 1  INT ADC"); // set duplex and ch 1 = INT 
-        websock.send("SCOPE Sample_uS 10000");  // dag note max rate ? about 3ms for internal
+        SampleRateUpdate(10000); // 10ms in us
         websock.send("SCOPE WS_Timer 200");
         ClearStripChart();
          
  }
 
  //*********Timing changes
- 
+   function changeInterval() {
+        xPlotInterval = document.getElementById("IntervalSelectElement").value;
+     }
+
  function changeSampleRate() {
        xPlotSampleRate = document.getElementById("xScaleSampleRateElement").value;
        SampleRateUpdate(xPlotSampleRate);
         }
+
  function SampleRateUpdate(INPUT){
         data2send="";
         data2send = "SCOPE Sample_uS ";
-        data2send += ( INPUT * 1000);  // send in us  CHANGE LATER to actual us 
+        data2send += ( INPUT );  // send in us  CHANGE LATER to actual us 
        websock.send(data2send);
-       document.getElementById("SPS_SourceID").innerHTML=INPUT;
-       console.log("SPS updated");console.log(INPUT);
- }    
+       xPlotSampleRateHz = 1000000/INPUT;
+       if (xPlotSampleRateHz >= 1000) {document.getElementById("SPS_HZSourceID").innerHTML=xPlotSampleRateHz/1000 +"kHz"; }
+                                     else { document.getElementById("SPS_HZSourceID").innerHTML=xPlotSampleRateHz +"Hz";}
+       xPlotSampleRatePerDiv = demograph.vlinesFreq * INPUT / 1000000;  
+       if (xPlotSampleRatePerDiv <= 0.4){demograph.timestamps=false; 
+              document.getElementById("SPS_PerDivSourceID").innerHTML = xPlotSampleRatePerDiv*1000 + "mS";}
+        else{demograph.timestamps=true;
+              if (xPlotSampleRatePerDiv >= 60){document.getElementById("SPS_PerDivSourceID").innerHTML= (xPlotSampleRatePerDiv/60).toFixed(2) + "min";}
+                else{document.getElementById("SPS_PerDivSourceID").innerHTML= xPlotSampleRatePerDiv + "S";}
+            }
+   }    
 
-
-     function changeInterval() {
-        xPlotInterval = document.getElementById("IntervalSelectElement").value;
-     }
 
 function checkforSPSTiming( element){
   //console.log(" SPScheck "); console.log(element);
-  if ( (element = "SCALES")|| (element = "SCALESB") ) {        // will need to check for other names as well ?
-         document.getElementById("xScaleSampleRateElement").value=20;  // change the select box 
-         xPlotSampleRate = 20;
+  if ( ( (element = "SCALES") || (element = "SCALESB") ) && (xPlotSampleRate <= 20000) ) {        
+         document.getElementById("xScaleSampleRateElement").value=20000;  // change the select box 
+         xPlotSampleRate = 20000;
          SampleRateUpdate(xPlotSampleRate);
          console.log("FORCING slower SPS %d ms for HX 711",xPlotSampleRate);
        }
@@ -472,7 +490,7 @@ function createLegendRect(labelDivID, color, label, valueID,i) {
             <svg width="10" height="10">
                 <rect width="10" height="10" style="fill: ${color}"/>
             </svg> 
-            ${labelSpan}(${sourceSpan}):${valueSpan}  
+            ${labelSpan}<small>(${sourceSpan})</small>:${valueSpan}  
             
         <div>
     `
@@ -1083,15 +1101,17 @@ function colorArray(len) {
           <option value="64V ADC">64V ADC</option>
           <option value="TRIANGLE" selected="selected">Triangle test</option>
         </select> </div>
-      <div class= "VertSelectBox" > <span class= "SettingsTitle" >Sample Rate (ms)</span> <select id="xScaleSampleRateElement" class="VertBoxStyle" onchange="changeSampleRate();" >
-          <option value="1" >1ms fastest</option>
-          <option value="3" >3ms </option>
-          <option value="5" >5ms </option>
-          <option value="10" selected="selected" >10ms</option>
-          <option value="20">20ms</option>
-          <option value="100">100ms</option>
-          <option value="1000" >1sec</option>
-          <option value="10000">10sec</option>
+      <div class= "VertSelectBox" > <span class= "SettingsTitle" >Sample Rate</span> <select id="xScaleSampleRateElement" class="VertBoxStyle" onchange="changeSampleRate();" >
+          <option value="500" > 0.5ms</option>
+          <option value="1000" >1ms</option>
+          <option value="2000" >2ms </option>
+          <option value="5000" >5ms </option>
+          <option value="10000" selected="selected" >10ms</option>
+          <option value="20000">20ms</option>
+          <option value="100000">100ms</option>
+          <option value="1000000" >1sec</option>
+          <option value="10000000">10sec</option>
+          <option value="100000000">100sec</option>
           
         </select> </div>
       <div class= "VertSelectBox" > <span  class= "SettingsTitle" >WS Send Period </span> <select id="WSSendPeriodElement" class="VertBoxStyle" onchange="SendWS();" >

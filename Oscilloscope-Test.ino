@@ -189,9 +189,10 @@ void loop() {
   webSocket.loop();
   server.handleClient();
   //Original
-  if ((currentTime - oldTimeADC) >= (getsampleuSTimer()/1000) ) {  // 5ms sample rate
+  if ((currentTime - oldTimeADC) >= (getsampleuSTimer()/1000) ) {  //  sample rate is sent in us 
   // and 
    // Serial.println("ADC Handle");
+   
     ADCHandler(); // now handles duplex 
     oldTimeADC = currentTime;
   }
@@ -202,7 +203,7 @@ void loop() {
   }
   if ( !getDuplexMode() && (currentTime - oldTime) >= getWS_Timer() ) {
     LEDFLASH();
-    Serial.print(".");
+    //Serial.print(".");
     scopeHandler(webSocket);
     webSocketData = "";
     oldTime = currentTime;
@@ -220,6 +221,7 @@ void loop() {
     //  if ( getDuplexMode() && Data_RTS() && Read_CTS() ){
    // Serial.print("/");Serial.print(readNumberofsamplesRead());
     //Serial.println(scopeHandler(webSocket));  // scopehandler returns the sent data 
+    LEDFLASH();
     scopeHandler(webSocket);
     webSocketData = "";
     oldTime = currentTime;
@@ -243,6 +245,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
   switch (type) {
     case WStype_DISCONNECTED:
       Serial.printf("[%u] Disconnected!\r\n", num);
+      webSocket.close();
+      WebserverSetup();
+      Serial.printf("[%u] ATTEMPTING RESTART OF WEBSERVER!\r\n", num);
       break;
     case WStype_CONNECTED:
       {
