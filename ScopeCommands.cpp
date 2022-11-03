@@ -24,6 +24,7 @@ int MAX_Samples = 320;   // for duplex testing testd to 1000 not found limit. sh
 
 int NumberofSamplesRead = 0;
 int TestTriangle = 0;
+int TestTriangle1 =0;
 bool _RTS ;
 bool _CTS;
 
@@ -289,9 +290,10 @@ int ADCRead(void) {
   }
 }
 void ADCHandler(void) {  // DUPLEX MODE reads BOTH channels and builds up the strings to send data in bulk
+  long temp1,temp2;
   if (getDuplexMode() && !Data_RTS() ) {  // Build up while RTS is false..
-   // addADCScopeData1(String(ChannelRead1(), DEC)); addADCScopeData1(String(NumberofSamplesRead, DEC));       // addADCScopeData1(String(ChannelRead2(), DEC));
-    addADCScopeData1(String(ChannelRead1(), DEC));  addADCScopeData1(String(ChannelRead2(), DEC));
+    temp1=ChannelRead1();temp2=ChannelRead2();
+    addADCScopeData1(String(temp1, DEC));  addADCScopeData1(String(temp2, DEC));
     NumberofSamplesRead++;  
   //  if (every(NumberofSamplesRead,50) )  {Serial.print("-");} 
   //  if (every(NumberofSamplesRead,MAX_Samples) )  {Serial.println("-");}
@@ -299,16 +301,43 @@ void ADCHandler(void) {  // DUPLEX MODE reads BOTH channels and builds up the st
     if (getsampleuSTimer() >= 5000) {Set_Data_RTS(true);} // ?? Allow faster update rate for slow samples per second
   } else 
   { 
-    addADCScopeData1(String(ChannelRead1(), DEC));
-    addADCScopeData2(String(ChannelRead2(), DEC)); 
+    addADCScopeData1(String(temp1, DEC));
+    addADCScopeData2(String(temp2, DEC)); 
   }
+  if ((getDataLog()) && (getsampleuSTimer() >= 5000)) {   
+     sendTime = millis();
+      Serial.println("");
+      Serial.print("DL Time:");
+      Serial.print(sendTime / 1000);
+      Serial.print('.');
+      Serial.print(sendTime % 1000);
+      if (getChanneMode1() != "OFF") {
+        if (getChanneMode1() != "SCALES") {
+          Serial.print(" CHANNEL1 mV : ");
+        } else {
+          Serial.print(" CHANNEL1 grams: ");
+        }
+        Serial.print((temp1 * 1000 / 64));
+      }
+      if (getChanneMode2() != "OFF") {
+        if ((getChanneMode2() == "SCALESB") || (getChanneMode2() == "SCALES")) {
+          Serial.print("   CHANNEL2 grams, ");
+        } else {
+          Serial.print("   CHANNEL2 mV, ");
+        }
+        Serial.print(temp2 * 1000 / 64);
+      }
+     }
   
-}
+ }
 
 
 long ChannelRead1(void) {
   long temp;
-  if (getChanneMode1() == "DIG") {
+  String Mode;
+  Mode=getChanneMode1();
+  //Serial.println(Mode);
+  if (Mode == "DIG") {
     if (digitalRead(ScopeDigInput0) == 1) {
       temp = 128;  // offset!
     } else {
@@ -316,26 +345,34 @@ long ChannelRead1(void) {
     }
     CH1Scale = 1;
   }
-  if (getChanneMode1() == "INT ADC") {
+  if (Mode == "INT ADC") {
     CH1Scale = 1024 / 3.3;  //3.3v ref, output in mv1024 not 2048
     temp = (analogRead(0) * 4096 / 64) / CH1Scale;
   }
 
-  if (getChanneMode1() == "SCALES") {
+  if (Mode == "SCALES") {
     CH1Scale = -100000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V! 209 and 1000 2090 and 100 20900 and 10 here
     temp = readScales(0);
     temp = ((temp * 4096 / 64) / CH1Scale) + offset;
   }
-  if (getChanneMode1() == "SCALESB") {
+  if (Mode == "SCALESB") {
     CH1Scale = -25000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V!
     temp = readScales(1);
     temp = ((temp * 4096 / 64) / CH1Scale) + offset;
   }
-  if (getChanneMode1() == "4V ADC") {
+  if (Mode == "4V ADC") {
     CH1Scale = 2048 / 4;
     setADCChannel(0);
     temp = ((ADCRead() * 4096 / 64) / CH1Scale);
   }
+  
+  if (Mode == "TRIANGLE"){ 
+    //Serial.println("mode is triangle");
+    temp = TestTriangle1 ;
+    TestTriangle1 ++;
+    if ( TestTriangle1 >=MAX_Samples+1){TestTriangle1 =0;}
+  }
+  Serial.print("mode is");Serial.print(Mode);Serial.print(" val is");Serial.println(temp);
   return temp;
 }
 
@@ -374,9 +411,9 @@ long ChannelRead2(void) {
 
 if (getChanneMode2() == "TRIANGLE") {
     
-    temp = TestTriangle;
-    TestTriangle++;
-    if ( TestTriangle >=MAX_Samples+1){TestTriangle=0;}
+    temp = TestTriangle ;
+    TestTriangle ++;
+    if ( TestTriangle >=MAX_Samples+1){TestTriangle = 0;}
   }
 
   return temp;
@@ -385,154 +422,178 @@ if (getChanneMode2() == "TRIANGLE") {
 
 
 
-void ADCHandler(byte chan) {
-  long temp;
-  bool D0, D1;
-  if ((chan == 1) || (chan == 0)) {
-    // clearADCScopeData1();
-    if (getChanneMode1() == "DIG") {
-      if (digitalRead(ScopeDigInput0) == 1) {
-        temp = 128;  // offset!
-      } else {
-        temp = 96;
-      }
-      addADCScopeData1(String(temp, DEC));
-      CH1Scale = 1;
-    }
-    if (getChanneMode1() == "INT ADC") {
-      CH1Scale = 1024 / 3.3;  //3.3v ref, output in mv1024 not 2048
-      temp = (analogRead(0) * 4096 / 64) / CH1Scale;
-      addADCScopeData1(String(temp, DEC));
-    }
+// void ADCHandler(byte chan) {
+//   long temp;
+//   bool D0, D1;
+//   if ((chan == 1) || (chan == 0)) {
+//     // clearADCScopeData1();
+//     if (getChanneMode1() == "DIG") {
+//       if (digitalRead(ScopeDigInput0) == 1) {
+//         temp = 128;  // offset!
+//       } else {
+//         temp = 96;
+//       }
+//       addADCScopeData1(String(temp, DEC));
+//       CH1Scale = 1;
+//     }
+//     if (getChanneMode1() == "INT ADC") {
+//       CH1Scale = 1024 / 3.3;  //3.3v ref, output in mv1024 not 2048
+//       temp = (analogRead(0) * 4096 / 64) / CH1Scale;
+//       addADCScopeData1(String(temp, DEC));
+//     }
 
-    if (getChanneMode1() == "SCALES") {
-      CH1Scale = -100000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V! 209 and 1000 2090 and 100 20900 and 10 here
-      temp = readScales(0);
-      temp = ((temp * 4096 / 64) / CH1Scale);
-      addADCScopeData1(String(temp + offset, DEC));  // add offset here, keeps temp as the actual reading
-    }
-    if (getChanneMode1() == "SCALESB") {
-      CH1Scale = -25000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V!
-      temp = readScales(1);
-      temp = ((temp * 4096 / 64) / CH1Scale);
-      addADCScopeData1(String(temp + offset, DEC));  // add offset here, keeps temp as the actual reading
-    }
-    if (getChanneMode1() == "4V ADC") {
-      CH1Scale = 2048 / 4;
-      setADCChannel(0);
-      temp = ((ADCRead() * 4096 / 64) / CH1Scale);
-      addADCScopeData1(String(temp, DEC));
-    }
-    if (getChanneMode1() == "64V ADC") {
-      CH1Scale = 2048 / 64;
-      setADCChannel(1);
-      temp = ((ADCRead() * 4096 / 64) / CH1Scale);
-      addADCScopeData1(String(temp, DEC));
-    }
-    if (getDataLog()) {
-      sendTime = millis();
-      Serial.println("");
-      Serial.print("DL Time:");
-      Serial.print(sendTime / 1000);
-      Serial.print('.');
-      Serial.print(sendTime % 1000);
-      if (getChanneMode1() != "OFF") {
-        if (getChanneMode1() != "SCALES") {
-          Serial.print(" CHANNEL1 mV : ");
-        } else {
-          Serial.print(" CHANNEL1 grams: ");
-        }
-        Serial.print((temp * 1000 / 64));
-      }
-    }
-  }  //end of if ch 1
+//     if (getChanneMode1() == "SCALES") {
+//       CH1Scale = -100000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V! 209 and 1000 2090 and 100 20900 and 10 here
+//       temp = readScales(0);
+//       temp = ((temp * 4096 / 64) / CH1Scale);
+//       addADCScopeData1(String(temp + offset, DEC));  // add offset here, keeps temp as the actual reading
+//     }
+//     if (getChanneMode1() == "SCALESB") {
+//       CH1Scale = -25000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V!
+//       temp = readScales(1);
+//       temp = ((temp * 4096 / 64) / CH1Scale);
+//       addADCScopeData1(String(temp + offset, DEC));  // add offset here, keeps temp as the actual reading
+//     }
+//     if (getChanneMode1() == "4V ADC") {
+//       CH1Scale = 2048 / 4;
+//       setADCChannel(0);
+//       temp = ((ADCRead() * 4096 / 64) / CH1Scale);
+//       addADCScopeData1(String(temp, DEC));
+//     }
+//     if (getChanneMode1() == "64V ADC") {
+//       CH1Scale = 2048 / 64;
+//       setADCChannel(1);
+//       temp = ((ADCRead() * 4096 / 64) / CH1Scale);
+//       addADCScopeData1(String(temp, DEC));
+//     }
+//     if (getDataLog()) {
+//       sendTime = millis();
+//       Serial.println("");
+//       Serial.print("DL Time:");
+//       Serial.print(sendTime / 1000);
+//       Serial.print('.');
+//       Serial.print(sendTime % 1000);
+//       if (getChanneMode1() != "OFF") {
+//         if (getChanneMode1() != "SCALES") {
+//           Serial.print(" CHANNEL1 mV : ");
+//         } else {
+//           Serial.print(" CHANNEL1 grams: ");
+//         }
+//         Serial.print((temp * 1000 / 64));
+//       }
+//     }
+//   }  //end of if ch 1
 
-  if ((chan == 2) || (chan == 0)) {
-    // clearADCScopeData2();
-    if (getChanneMode2() == "DIG") {
-      // Serial.println(digitalRead(13));  //test
-      if (digitalRead(ScopeDigInput1) == 1) {
-        temp = 32;
-      } else {
-        temp = 0;
-      }
-      addADCScopeData2(String(temp, DEC));
-      CH2Scale = 1;
-    }
-    if (getChanneMode2() == "INT ADC") {
-      CH2Scale = 1024 / 3.3;  //3.3v ref, output in mv1024 not 2048
-      temp = (analogRead(0) * 4096 / 64) / CH2Scale;
-      addADCScopeData2(String(temp, DEC));
-    }
-    if (getChanneMode2() == "SCALES") {
-      CH2Scale = -100000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V!
-      temp = readScales(0);
-      temp = ((temp * 4096 / 64) / CH2Scale);
-      addADCScopeData2(String(temp + offset, DEC));
-    }
-    if (getChanneMode2() == "SCALESB") {
-      CH2Scale = -25000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V!
-      temp = readScales(1);
-      temp = ((temp * 4096 / 64) / CH2Scale);
-      addADCScopeData2(String(temp + offset, DEC));
-    }
-    if (getChanneMode2() == "4V ADC") {
-      setADCChannel(0);
-      CH2Scale = 2048 / 4;
-      temp = ((ADCRead() * 4096 / 64) / CH2Scale);
-      addADCScopeData2(String(temp, DEC));
-    }
-    if (getChanneMode2() == "64V ADC") {
-      setADCChannel(1);
-      CH2Scale = 2048 / 64;
-      temp = ((ADCRead() * 4096 / 64) / CH2Scale);
-      addADCScopeData2(String(temp, DEC));
-    }
-    if (getDataLog()) {
-      if (getChanneMode2() != "OFF") {
-        if ((getChanneMode2() == "SCALESB") || (getChanneMode2() == "SCALES")) {
-          Serial.print("   CHANNEL2 grams, ");
-        } else {
-          Serial.print("   CHANNEL2 mV, ");
-        }
-        Serial.print(temp * 1000 / 64);
-      }
-    }
-  }                   //end of if channelmode = 2
-  if ((chan == 3)) {  // simultaneous read digital test first
-    D0 = digitalRead(ScopeDigInput0);
-    D1 = digitalRead(ScopeDigInput1);
-    CH1Scale = 1024 / 3.3;  //3.3v ref, output in mv1024 not 2048
-    temp = (analogRead(0) * 4096 / 64) / CH1Scale;
-    if (getChanneMode1() == "SCALES") {
-      CH1Scale = -100000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V!
-      temp = readScales(0);
-      temp = ((temp * 4096 / 64) / CH1Scale);
-      addADCScopeData1(String(temp + offset, DEC));  // add offset here, keeps temp as the actual reading
-    }
-    if (getChanneMode1() == "INT ADC") {
-      addADCScopeData1(String(temp, DEC));
-    }
-    if (getChanneMode2() == "INT ADC") {
-      addADCScopeData2(String(temp, DEC));
-    }
-    if (getChanneMode1() == "DIG") {
-      if (D0) {
-        temp = 128;  // offset!
-      } else {
-        temp = 96;
-      }
-      addADCScopeData1(String(temp, DEC));
-      CH1Scale = 1;
-    }
-    if (getChanneMode2() == "DIG") {
-      if (D1) {
-        temp = 32;  // offset!
-      } else {
-        temp = 0;
-      }
-      addADCScopeData2(String(temp, DEC));
-      CH1Scale = 1;
-    }
-  }
-}
+//   if ((chan == 2) || (chan == 0)) {
+//     // clearADCScopeData2();
+//     if (getChanneMode2() == "DIG") {
+//       // Serial.println(digitalRead(13));  //test
+//       if (digitalRead(ScopeDigInput1) == 1) {
+//         temp = 32;
+//       } else {
+//         temp = 0;
+//       }
+//       addADCScopeData2(String(temp, DEC));
+//       CH2Scale = 1;
+//     }
+//     if (getChanneMode2() == "INT ADC") {
+//       CH2Scale = 1024 / 3.3;  //3.3v ref, output in mv1024 not 2048
+//       temp = (analogRead(0) * 4096 / 64) / CH2Scale;
+//       addADCScopeData2(String(temp, DEC));
+//     }
+//     if (getChanneMode2() == "SCALES") {
+//       CH2Scale = -100000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V!
+//       temp = readScales(0);
+//       temp = ((temp * 4096 / 64) / CH2Scale);
+//       addADCScopeData2(String(temp + offset, DEC));
+//     }
+//     if (getChanneMode2() == "SCALESB") {
+//       CH2Scale = -25000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V!
+//       temp = readScales(1);
+//       temp = ((temp * 4096 / 64) / CH2Scale);
+//       addADCScopeData2(String(temp + offset, DEC));
+//     }
+//     if (getChanneMode2() == "4V ADC") {
+//       setADCChannel(0);
+//       CH2Scale = 2048 / 4;
+//       temp = ((ADCRead() * 4096 / 64) / CH2Scale);
+//       addADCScopeData2(String(temp, DEC));
+//     }
+//     if (getChanneMode2() == "64V ADC") {
+//       setADCChannel(1);
+//       CH2Scale = 2048 / 64;
+//       temp = ((ADCRead() * 4096 / 64) / CH2Scale);
+//       addADCScopeData2(String(temp, DEC));
+//     }
+//     if (getDataLog()) {
+//       if (getChanneMode2() != "OFF") {
+//         if ((getChanneMode2() == "SCALESB") || (getChanneMode2() == "SCALES")) {
+//           Serial.print("   CHANNEL2 grams, ");
+//         } else {
+//           Serial.print("   CHANNEL2 mV, ");
+//         }
+//         Serial.print(temp * 1000 / 64);
+//       }
+//     }
+//   }                   //end of if channelmode = 2
+//   if ((chan == 3)) {  // simultaneous read digital test first
+//     D0 = digitalRead(ScopeDigInput0);
+//     D1 = digitalRead(ScopeDigInput1);
+//     CH1Scale = 1024 / 3.3;  //3.3v ref, output in mv1024 not 2048
+//     temp = (analogRead(0) * 4096 / 64) / CH1Scale;
+//     if (getChanneMode1() == "SCALES") {
+//       CH1Scale = -100000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V!
+//       temp = readScales(0);
+//       temp = ((temp * 4096 / 64) / CH1Scale);
+//       addADCScopeData1(String(temp + offset, DEC));  // add offset here, keeps temp as the actual reading
+//     }
+//     if (getChanneMode1() == "INT ADC") {
+//       addADCScopeData1(String(temp, DEC));
+//     }
+//     if (getChanneMode2() == "INT ADC") {
+//       addADCScopeData2(String(temp, DEC));
+//     }
+//     if (getChanneMode1() == "DIG") {
+//       if (D0) {
+//         temp = 128;  // offset!
+//       } else {
+//         temp = 96;
+//       }
+//       addADCScopeData1(String(temp, DEC));
+//       CH1Scale = 1;
+//     }
+//     if (getChanneMode2() == "DIG") {
+//       if (D1) {
+//         temp = 32;  // offset!
+//       } else {
+//         temp = 0;
+//       }
+//       addADCScopeData2(String(temp, DEC));
+//       CH1Scale = 1;
+//     }
+//     if (getDataLog()) {
+//      sendTime = millis();
+//       Serial.println("");
+//       Serial.print("DL Time:");
+//       Serial.print(sendTime / 1000);
+//       Serial.print('.');
+//       Serial.print(sendTime % 1000);
+//       if (getChanneMode1() != "OFF") {
+//         if (getChanneMode1() != "SCALES") {
+//           Serial.print(" CHANNEL1 mV : ");
+//         } else {
+//           Serial.print(" CHANNEL1 grams: ");
+//         }
+//         Serial.print((temp * 1000 / 64));
+//       }
+//       if (getChanneMode2() != "OFF") {
+//         if ((getChanneMode2() == "SCALESB") || (getChanneMode2() == "SCALES")) {
+//           Serial.print("   CHANNEL2 grams, ");
+//         } else {
+//           Serial.print("   CHANNEL2 mV, ");
+//         }
+//         Serial.print(temp * 1000 / 64);
+//       }
+//     }
+//   }
+// }

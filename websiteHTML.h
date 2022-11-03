@@ -1008,6 +1008,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
           <option value="DIG">Digital Input (2)</option>
           <option value="4V ADC">4V ADC</option>
           <option value="64V ADC">64V ADC</option>
+          option value="TRIANGLE">Triangle test</option>
           <option value="UART">UART</option>
         </select> </div>
       <div style="width: 100%; height:12.5vh; margin-top:2.5vh;"> <span style="width: 100%; height:2.5vh;">Signal Zoom</span> <select id="yScaleSelectElement" onchange="changeYScale();" style="display:block; -webkit-appearance: none; box-sizing: content-box; width: 70%; height:10vh; background-color: #E87D75; color:white; border:0; border-radius: 5px; text-align:center; text-align-last:center; margin-left:15%;">

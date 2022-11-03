@@ -8,7 +8,7 @@ void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKE
   String topLevelToken = "";
   String subLevelToken = "";
   String serialClear = "SERIAL UART CLEAR";
-//  Serial.println("New data received: " + WEBSOCKETDATA); //  turn on for debugging!
+ // Serial.println("New data received: " + WEBSOCKETDATA); //  turn on for debugging!
 
 
   

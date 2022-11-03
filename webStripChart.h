@@ -20,13 +20,15 @@ var Test1 = [];
 var Test2 = [];
 var Data_Length = 0;
 var Data_Updated = false;   
-var xplotInterval= "2";
+var xplotInterval= 2;
 var pauseScopeFlag = false;
+var ScopeDotSize = 8;
 
  var toggleSettingsElementFlag = false;
  var currentScreenElement = "STRIPCHART";
 
-
+var triggerDetectionFlag = false;
+var dataLogFlag = false;
 
  var xPlotSampleRate = "?";
  var xPlotSampleRateHZ = "?";
@@ -154,7 +156,39 @@ function displayMyVar(targetElementId) {
       }
     }
 
+function toggleTrigger()
+    {
+      if(triggerDetectionFlag)
+      {
+        triggerDetectionFlag = false;
+        document.getElementById("toggleTriggerElement").innerHTML = "<b>Trigger : Off</b>";
+        document.getElementById("toggleTriggerElement").style.backgroundColor = "#E87D75";
+      }
+      else
+      {
+        triggerDetectionFlag = true;
+        document.getElementById("toggleTriggerElement").innerHTML = "<b>Trigger : On</b>";
+        document.getElementById("toggleTriggerElement").style.backgroundColor = "#4E4E56";
+      }
+    }
 
+     function toggleDataLog()
+    {
+      if(dataLogFlag)
+      {
+        dataLogFlag = false;
+        document.getElementById("toggleDataLogButton").innerHTML = "<b>Log Data: Off</b>"
+        document.getElementById("toggleDataLogButton").style.backgroundColor = "#E87D75";
+        websock.send("SCOPE DATALOG OFF");
+      }
+      else
+      {
+        dataLogFlag = true;
+        document.getElementById("toggleDataLogButton").innerHTML = "<b>Log Data: On</b>"
+        document.getElementById("toggleDataLogButton").style.backgroundColor = "#4E4E56";
+        websock.send("SCOPE DATALOG ON");
+      }
+    }
     
  function enterText()
     { 
@@ -382,9 +416,7 @@ function selectStripChart()
  }
 
  //*********Timing changes
-   function changeInterval() {
-        xPlotInterval = document.getElementById("IntervalSelectElement").value;
-     }
+
 
  function changeSampleRate() {
        xPlotSampleRate = document.getElementById("xScaleSampleRateElement").value;
@@ -423,12 +455,27 @@ function checkforSPSTiming( element){
  function changeChannelSelect1()
     { console.log ("was:");console.log (CHSource[0]);
       CHSource[0] =  document.getElementById("channelSelectElement1").value;
-      console.log (CHSource[0]);
+      if  ( (CHSource[0] == "SCALES") || (CHSource[0] == "SCALESB") ) {
+            demograph.units[0]="Kg";}
+       else{demograph.units[0]="Volts";  }
+
       channelSelect1 = "SCOPE DUPLEX 1  "; // note two spaces
       channelSelect1 += CHSource[0];
       websock.send(channelSelect1);
       checkforSPSTiming(CHSource[0]);
       document.getElementById("CH_SourceID[0]").innerHTML=CHSource[0];
+    }
+  function changeChannelSelect(element, i )
+    { CHSource[i] =  document.getElementById(element).value;
+      if  ( (CHSource[i] == "SCALES") || (CHSource[i] == "SCALESB") ) {
+            demograph.units[i]="Kg";}
+       else{ if ( CHSource[i] == "DIG") {demograph.units[i]="";}else{demograph.units[i]="V"; } }
+     var dataout="";
+      dataout = "SCOPE DUPLEX "+(i+1)+"  "; // note two spaces
+      dataout += CHSource[i];
+      websock.send(dataout);
+      checkforSPSTiming(CHSource[i]);
+      document.getElementById("CH_SourceID[i]").innerHTML=CHSource[i];
     }
 
  function changeChannelSelect2()
@@ -459,7 +506,9 @@ function checkforSPSTiming( element){
         document.getElementById("togglePauseButton").style.backgroundColor = "#4E4E56";
       }
     }
-
+function ChangeDotSize(){
+  ScopeDotSize= document.getElementById("ScopeDotSizeElement").value;
+}
  function SendWS() {
    WebSockTimeIntervalMS = document.getElementById("WSSendPeriodElement").value;
         data2send="";
@@ -501,7 +550,7 @@ function createGraph(
     labels,
     units,
     labelDivID,
-    intervalSize = 3,
+    intervalSize ,
     maxVal = 10,
     minVal = 0,
     vlines = true,
@@ -555,10 +604,13 @@ class Graph {
         this.setWidthHeightAndCssScale()
 
         this.cssScale = window.devicePixelRatio
+        console.log("578");console.log(intervalSize)
         this.intervalSize = intervalSize * this.cssScale
-
+        console.log("580");console.log(this.intervalSize)
         this.nPointsFloat = this.width / this.intervalSize
+
         this.nPoints = Math.round(this.nPointsFloat) + 1
+        console.log("584");console.log(this.nPoints)
         this.points = emptyArray2D(noLabels, this.nPoints)
         this.maxVal = maxVal
         this.minVal = minVal
@@ -628,14 +680,12 @@ class Graph {
     }
 
     updateLegends(values) {
-     // console.log ( values )
         for (let i = 0; i < this.noLabels; i++)
              byID(this.valueIDs[i]).innerHTML = values[i].toFixed(2) + " " + this.units[i];
     }
 
     updateTimestamps() {
         const timestampString = getTimestamp();
-
         this.timestampsArray = shiftArrayLeft(this.timestampsArray, timestampString);
     }
 
@@ -679,17 +729,27 @@ class Graph {
 
     drawHorizontalLines() {
         let entityDecode = document.createElement("textarea")
+        let entityDecodeR = document.createElement("textarea")
         entityDecode.innerHTML = this.units[0]
+        entityDecodeR.innerHTML = this.units[1]
 
         for (let i = 1; i <= this.scalesteps; i++) {
             const y = this.height - i * this.hstep
             const xoffset = 2
             const yoffset = this.fontSize + 2 * this.cssScale
-            this.ctx.fillText(
+            if (entityDecode.innerHTML !="" ){
+              this.ctx.fillText(
                 (i * this.sstep + this.minVal).toFixed(2) + " " + entityDecode.value,
                 xoffset,
                 y + yoffset
-            )
+              )}
+             if ( (entityDecode.innerHTML != entityDecodeR.innerHTML) && (entityDecodeR.innerHTML !="" ) ){
+              this.ctx.fillText(
+                (i * this.sstep + this.minVal).toFixed(2) + " " + entityDecodeR.value,
+                xoffset+this.width -(this.fontSize*4) ,
+                y + yoffset
+              )}
+              
             this.ctx.beginPath()
             this.ctx.moveTo(0, y)
             this.ctx.lineTo(this.width, y)
@@ -717,7 +777,7 @@ class Graph {
     }
 
     drawGraph() {
-      this.ctx.lineWidth = 8;
+      this.ctx.lineWidth = ScopeDotSize;
         for (let i = 0; i < this.noLabels; i++) {
             for (let j = this.nPoints - 1; j > 0; j--) {
                 /* Calculate line coordinates */
@@ -1036,10 +1096,10 @@ function colorArray(len) {
       </button> 
       </div>
   </div><!--NOTE: This comment is to prevent white space between inline blocking elements.-->
-    <div id="graphLabels" > <span id="EXTRA_DATA";></span> </div></div>
+    <div id="graphLabels" style="margin-left: 4%; " > <span id="EXTRA_DATA";></span> </div></div>
     <!-- div for legends/labels -->
-  <div id="oscilloscopeScreenElement" style="display:inline-block; vertical-align:top; text-align:center; margin-left:7.5%; width: 85%;">
-    <!-- Canvas for the graph also click to get to previous page -->
+  <div id="oscilloscopeScreenElement" style="display:inline-block; vertical-align:top; text-align:center; margin-left:2%; width: 96%;">
+    <!--  -->
     <canvas
         id="graphDemo"
         style="width: 100%; height:70vh; border:2px solid #000000;"
@@ -1081,22 +1141,22 @@ function colorArray(len) {
       <div class= "VertSelectBox"  > <span class= "SettingsTitle" >Pause</span> <button id="togglePauseButton" class="VertBoxStyle" onclick="togglePause()">
         <b>Pause: Off</b>
       </button> </div>
-      <div class= "VertSelectBox" > <span class= "SettingsTitle" >Channel 1</span> <select id="channelSelectElement1" class="VertBoxStyle" onchange="changeChannelSelect1();" >
+      <div class= "VertSelectBox" > <span class= "SettingsTitle" >Channel 1</span> <select id="channelSelectElement1" class="VertBoxStyle" onchange="changeChannelSelect( id , 0 );">
            <option value="OFF">Off</option>
            <option value="SCALES">HX711 Scales Ch_A</option> 
            <option value="INT ADC"selected="selected">Internal ADC (A0)</option> 
            <option value="DIG">Digital Input 1 </option>
            <option value="4V ADC" >4V ADC</option>
            <option value="64V ADC">64V ADC</option>
-          
-          <option value="UART">UART</option>
+           <option value="TRIANGLE">Triangle test</option>
+           
         </select> </div>
-      <div class= "VertSelectBox" > <span class= "SettingsTitle" >Channel 2</span> <select id="channelSelectElement2" class="VertBoxStyle" onchange="changeChannelSelect2();" >
+      <div class= "VertSelectBox" > <span class= "SettingsTitle" >Channel 2</span> <select id="channelSelectElement2" class="VertBoxStyle" onchange="changeChannelSelect( id , 1);" >
           <option value="OFF">Off</option>
           <option value="SCALES">HX711 Scales Ch_A</option> 
           <option value="SCALESB">HX711 Scales Ch_B</option> 
           <option value="INT ADC">Internal ADC (A0)</option>
-          <option value="DIG" >Digital Input (2)</option>
+          <option value="DIG" >Digital Input 2</option>
           <option value="4V ADC">4V ADC</option>
           <option value="64V ADC">64V ADC</option>
           <option value="TRIANGLE" selected="selected">Triangle test</option>
@@ -1114,31 +1174,20 @@ function colorArray(len) {
           <option value="100000000">100sec</option>
           
         </select> </div>
-      <div class= "VertSelectBox" > <span  class= "SettingsTitle" >WS Send Period </span> <select id="WSSendPeriodElement" class="VertBoxStyle" onchange="SendWS();" >
-          <option value="50"> 50ms </option>
-          <option value="100">100ms</option>
-          <option value="500">0.5s</option>
-          <option value="1000" selected="selected">1s</option>
-          <option value="10000">10s</option>
-         
-          </select> </div>
-      <div class= "VertSelectBox" > <span  class= "SettingsTitle" >Interval</span> <select id="IntervalSelectElement" class="VertBoxStyle" onchange="changeInterval();" >
-          <option value="1" >1</option>
-          <option value="2" >2</option>
-           <option value="3" >3</option>
-          <option value="5" selected="selected">5</option>
-          <option value="10">10</option>
-          <option value="20">20</option>
-        </select> </div>
-      <div class= "VertSelectBox" > <span  class= "SettingsTitle" >Peak Detection</span> <button id="togglePeakDetectionButton" class="VertBoxStyle"  onclick="togglePeakDetection()">
+      <div class= "VertSelectBox" > <span  class= "SettingsTitle" >Screen Dot </span> <select id="ScopeDotSizeElement" class="VertBoxStyle" onchange="ChangeDotSize();" >
+          <option value="2">Fine</option>
+          <option value="5"selected="selected">Mid</option>
+          <option value="8">8</option>
+          <option value="10">Huge</option>
+           </select> </div>
+
+      <div class= "VertSelectBox" > <span  class= "SettingsTitle" >Trigger </span> <button id="toggleTriggerElement" class="VertBoxStyle"  onclick="toggleTrigger()">
         <b>Peak Detection: Off</b>
       </button> </div>
       <div class= "VertSelectBox" > <span  class= "SettingsTitle" >Log Data</span> <button id="toggleDataLogButton" class="VertBoxStyle"  onclick="toggleDataLog()">
         <b>Log Data: Off</b>
       </button> </div>
-       <div class= "VertSelectBox" > <span  class= "SettingsTitle" >OSD</span> <button id="toggleOSDButton" class="VertBoxStyle"  onclick="toggleOSD()">
-        <b>OSD: Off</b>
-      </button> </div>
+
     </div><!--NOTE: This comment is to prevent white space between inline blocking elements.
   ---><div id="terminalSettingsElement" style="display:none; width:100%; height:77.5vh; overflow-y:auto; text-align:center; ">
       <div class= "VertSelectBox" > <span  class= "SettingsTitle" >Connect</span> <button id="connectTerminalButton" class="VertBoxStyle"  onclick="terminalConnect()">
@@ -1163,7 +1212,7 @@ function colorArray(len) {
         /* Create graph using picograph   */
         let demograph = createGraph("graphDemo",
             ["CH1", "CH2"],
-            ["volts","kG"], "graphLabels"  );
+            ["V",""], "graphLabels",3  );
 
         // * Run this at very xxxx ms to run demograph update*/
        //setInterval(updateEverySecond,1000); 
