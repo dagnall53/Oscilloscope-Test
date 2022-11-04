@@ -34,7 +34,6 @@ static const uint8_t LED = 16;
 #include <Wire.h>
 #include "ScopeCommands.h"
 //#include "miniDB.h" // called from scope commands and websocket interprete
-#include "websiteHTML.h"
 #include "webStripChart.h"
 #include "WebsocketInterpreter.h"
 
@@ -271,7 +270,7 @@ void WebserverSetup() {
 }
 
 void handleRoot() {
-  server.send_P(200, "text/html", INDEX_HTML);
+ // server.send_P(200, "text/html", INDEX_HTML);
 }
 
 // void handleTest() {
