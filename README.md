@@ -2,8 +2,10 @@
 
 Might have been better to call it a "Strip recorder".. 
 This uses extensive modifications to dEEbugger (https://github.com/S-March/dEEbugger_Public) 
-The aim was to create a more universal device: 
-Aiming for ESP32 and faster ADC. but for now: 
+and replaces the original graphics with PicoGraph https://github.com/RainingComputers/picograph.js 
+The aim was to educate myself and also to create a more universal device for lab tests: 
+I may eventualy migrate to ESP32 and faster ADC , and perhaps Interrupts for the faster sample rates.
+# Current Capabilities
 Uses integral ESP8266 A0 for analog to about 1ksps.
 Sampling tries to be synchronous for two channels.
 Has integral 2 input "digital" that displays as 0/1/2/3 'v' states on a single channel.
