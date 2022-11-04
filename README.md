@@ -1,7 +1,8 @@
 # Oscilloscope-Test
 
 Might have been better to call it a "Strip recorder".. 
-Thi uses extensive to dEEbugger (https://github.com/S-March/dEEbugger_Public) To make a more universal device: 
+This uses extensive modifications to dEEbugger (https://github.com/S-March/dEEbugger_Public) 
+The aim was to create a more universal device: 
 Aiming for ESP32 and faster ADC. but for now: 
 Uses integral ESP8266 A0 for analog to about 1ksps.
 Sampling tries to be synchronous for two channels.
