@@ -190,35 +190,15 @@ void loop() {
   server.handleClient();
   //Original
   if ((currentTime - oldTimeADC) >= (getsampleuSTimer()/1000) ) {  //  sample rate is sent in us 
-  // and 
-   // Serial.println("ADC Handle");
-   
     ADCHandler(); // now handles duplex 
     oldTimeADC = currentTime;
   }
+
   if (webSocketData != "") {
     webSocketDataInterpreter(webSocket, webSocketData);
    // Serial.println("Websocket data Handle");
     webSocketData = "";
   }
-
-
-
-  // if ( !getDuplexMode() && (currentTime - oldTime) >= getWS_Timer() ) {
-  //   LEDFLASH();
-  //   //Serial.print(".");
-  //   scopeHandler(webSocket);
-  //   webSocketData = "";
-  //   oldTime = currentTime;
-  // }
-// if ( (currentTime - oldTime) >= getWS_Timer() ) {
-//   String json = "{\"KeepAlive\":";
-//   json += "100";
-//   json += "}";
-//   webSocket.broadcastTXT(json.c_str(), json.length());
-//   oldTime = currentTime;
-// }
-
 
   if ((!PAUSE()) && getDuplexMode() && Data_RTS()  ){
     //  if ( getDuplexMode() && Data_RTS() && Read_CTS() ){
@@ -279,7 +259,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 
 void WebserverSetup() {
   server.on("/", handleStrip);
-  server.on("/HOME", handleRoot);
+  //server.on("/HOME", handleRoot);
   server.on("/DATA", SendDATA);
   server.on("/data", SendDATA);
   // server.on("/TEST", handleTest);

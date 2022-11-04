@@ -42,12 +42,13 @@ var dataLogFlag = false;
      Scale[0] = "1";  // CH 1  
      Scale[1] = "1";  // CH 2   
  var Offset =[];
-     Offset[0]= "0";
-     Offset[1]= "1";     
+     Offset[0]= "2";
+     Offset[1]= "2";     
 
  var CHSource =[];
      CHSource[0] = "INT ADC";
      CHSource[1] = "TRIANGLE";     
+     CHSource[3] = "BINARY"; 
 
  var sampleRate = 10000; // just a temporary setup   
 
@@ -67,11 +68,13 @@ var dataLogFlag = false;
 
 //*********  Data Display ******
 //function createLegendRect(labelDivID, color, label, valueID,i) {
-// <-- //CH1(<span id="CH_SourceID[0]">${CHSource[0]}</span>):  
-//CH2(<span id="CH_SourceID[1]">${CHSource[1]}</span>):<br> --> 
+// CH1(<span id="CH_SourceID[0]">${CHSource[0]}</span>):  
+   // CH2(<span id="CH_SourceID[1]">${CHSource[1]}</span>):<br> 
 //SPS:(<span id="SPS_SourceID">${xPlotSampleRate}</span>)
-  function createDataRect() {
+  function createDataRect() { 
+    
    byID("EXTRA_DATA").innerHTML += `
+   
    Sample Rate:(<span id="SPS_HZSourceID">${xPlotSampleRateHZ}</span>)
    = <span id="SPS_PerDivSourceID">${xPlotSampleRatePerDiv}</span> PerDiv
    <br>  `   
@@ -335,7 +338,7 @@ function toggleTrigger()
       };
       websock.onmessage = function(evt)
       {
-        console.log(evt);
+        //console.log(evt);
         wsMessageArray = evt.data.split(" ");
         if(wsMessageArray.length >= 2)
         {
@@ -362,13 +365,13 @@ function parseDuplexData() {
       if(wsMessageArray.length > 3) { 
         Data_Length=0; 
 				for(var Count = 3; Count <= (wsMessageArray.length-1); Count++)	{ 
-          demograph.updatePoints( [ parseFloat(wsMessageArray[Count])/parseInt(Scale[0]), parseFloat(wsMessageArray[Count+1])/parseInt(Scale[1]) ] );
+          demograph.updatePoints( [ parseFloat(Offset[0])+parseFloat(wsMessageArray[Count]), parseFloat(Offset[1])+parseFloat(wsMessageArray[Count+1]) ] );
           Count++;
 					Data_Length ++;
         
         }
         // note use 3 and 4 as index to get first sample only
-        demograph.updateLegends( [ parseFloat(wsMessageArray[3])/parseInt(Scale[0]), parseFloat(wsMessageArray[4])/parseInt(Scale[1]) ]);
+        demograph.updateLegends( [ parseFloat(wsMessageArray[3]), parseFloat(wsMessageArray[4]) ]);
         demograph.updateTimestamps();
       }
     }
@@ -455,42 +458,33 @@ function checkforSPSTiming( element){
   
  }
 
- function changeChannelSelect1()
-    { console.log ("was:");console.log (CHSource[0]);
-      CHSource[0] =  document.getElementById("channelSelectElement1").value;
-      if  ( (CHSource[0] == "SCALES") || (CHSource[0] == "SCALESB") ) {
-            demograph.units[0]="Kg";}
-       else{demograph.units[0]="Volts";  }
 
-      channelSelect1 = "SCOPE DUPLEX 1  "; // note two spaces
-      channelSelect1 += CHSource[0];
-      websock.send(channelSelect1);
-      checkforSPSTiming(CHSource[0]);
-      document.getElementById("CH_SourceID[0]").innerHTML=CHSource[0];
-    }
-  function changeChannelSelect(element, i )
-    { CHSource[i] =  document.getElementById(element).value;
+  function changeChannelSelect(element, i ) { 
+    CHSource[i] =  document.getElementById(element).value;
+    const stringVal = "CH_SourceID[" + String(i) + "]";
+    //console.log(stringVal);
+    document.getElementById(stringVal).innerHTML=CHSource[i]; 
+    //document.getElementById("CH_SourceID[0]").innerHTML=CHSource[0]; 
+    //document.getElementById("CH_SourceID[1]").innerHTML=CHSource[1];
+      demograph.units[i]="V";
       if  ( (CHSource[i] == "SCALES") || (CHSource[i] == "SCALESB") ) {
             demograph.units[i]="Kg";}
-       else{ if ( CHSource[i] == "DIG") {demograph.units[i]="";}else{demograph.units[i]="V"; } }
+      if ( CHSource[i] == "DIG") {demograph.units[i]="";}
      var dataout="";
       dataout = "SCOPE DUPLEX "+(i+1)+"  "; // note two spaces
       dataout += CHSource[i];
       websock.send(dataout);
       checkforSPSTiming(CHSource[i]);
-      document.getElementById("CH_SourceID[i]").innerHTML=CHSource[i];
-    }
+      }
 
- function changeChannelSelect2()
-    {
-      CHSource[1] =  document.getElementById("channelSelectElement2").value;
-      channelSelect2 = "SCOPE DUPLEX 2  ";
-      channelSelect2 += CHSource[1];
-      websock.send(channelSelect2);
-      checkforSPSTiming(CHSource[1]);
-      document.getElementById("CH_SourceID[1]").innerHTML=CHSource[1];      
-    }
+
+  function TwoYscales(entityDecode,entityDecodeR   ){
+        
+          return ( (Offset[0] != Offset[1]) || 
+                  ((entityDecode.innerHTML != entityDecodeR.innerHTML) && (entityDecodeR.innerHTML !="" ) ) 
+                  );
     
+  }  
 
     function togglePause()
     {
@@ -532,10 +526,10 @@ function createValueIDs(labels, canvasID) {
 
     return valueIDs
 }
-function createLegendRect(labelDivID, color, label, valueID,i) {
- // console.log( "in the LEGEND rectangle");
+function createLegendRect(labelDivID, color, label, valueID,  i) {
     const labelSpan = `<span>${label}</span>`
-    const sourceSpan = `<span id="CH_SourceID[i]">${CHSource[i]}</span>` 
+    const stringVal = "\"CH_SourceID[" + String(i) + "]\"";  
+    const sourceSpan= `<span id=`+stringVal+`>${CHSource[i]}</span>`;   
     const valueSpan = label.at(-1) == ":" ? `<span id="${valueID}"></span>` : ""
     byID(labelDivID).innerHTML += `
         <div style="display: inline-block;">
@@ -605,15 +599,10 @@ class Graph {
         this.canvas = byID(canvasID)
         this.ctx = this.canvas.getContext("2d")
         this.setWidthHeightAndCssScale()
-
         this.cssScale = window.devicePixelRatio
-        console.log("578");console.log(intervalSize)
         this.intervalSize = intervalSize * this.cssScale
-        console.log("580");console.log(this.intervalSize)
         this.nPointsFloat = this.width / this.intervalSize
-
-        this.nPoints = Math.round(this.nPointsFloat) + 1
-        console.log("584");console.log(this.nPoints)
+        this.nPoints = Math.round(this.nPointsFloat) + 1        
         this.points = emptyArray2D(noLabels, this.nPoints)
         this.maxVal = maxVal
         this.minVal = minVal
@@ -741,18 +730,23 @@ class Graph {
             const xoffset = 2
             const yoffset = this.fontSize + 2 * this.cssScale
             if (entityDecode.innerHTML !="" ){
+              if ( TwoYscales(entityDecode,entityDecodeR) )     
+                  {this.ctx.fillStyle="red"; }
               this.ctx.fillText(
-                (i * this.sstep + this.minVal).toFixed(2) + " " + entityDecode.value,
+                (i * this.sstep + this.minVal - parseFloat(Offset[0]) ).toFixed(2) + " " + entityDecode.value,
                 xoffset,
                 y + yoffset
               )}
-             if ( (entityDecode.innerHTML != entityDecodeR.innerHTML) && (entityDecodeR.innerHTML !="" ) ){
+             if ( TwoYscales(entityDecode,entityDecodeR) )     
+                  {
+                   // console.log(this.ctx.fillStyle);
+              this.ctx.fillStyle="green";
               this.ctx.fillText(
-                (i * this.sstep + this.minVal).toFixed(2) + " " + entityDecodeR.value,
+                ( (i * this.sstep + this.minVal) - parseFloat(Offset[1]) ).toFixed(2) + " " + entityDecodeR.value,
                 xoffset+this.width -(this.fontSize*4) ,
                 y + yoffset
               )}
-              
+              this.ctx.fillStyle="black";
             this.ctx.beginPath()
             this.ctx.moveTo(0, y)
             this.ctx.lineTo(this.width, y)
@@ -909,16 +903,12 @@ function colorArray(len) {
 
  function updateButtonSelect(BUTTON) // may need changing for strip chart
  {
-    console.log(" updateButtonSelect"); console.log (BUTTON);
       toggleSettingsElementFlag = true;
       updateSettingsElementToggle();
-      document.getElementById("setScopeButton").style.backgroundColor = "#E87D75";
-      document.getElementById("setScopeButton").style.color = "white";
       document.getElementById("setTerminalButton").style.backgroundColor = "#E87D75";
       document.getElementById("setTerminalButton").style.color = "white";
       document.getElementById("setStripChartButton").style.backgroundColor = "#E87D75";
       document.getElementById("setStripChartButton").style.color = "white";
-
       document.getElementById("setI2CButton").style.backgroundColor = "#E87D75";
       document.getElementById("setI2CButton").style.color = "white";
       document.getElementById("oscilloscopeScreenElement").style.display = "none";
@@ -949,7 +939,7 @@ function colorArray(len) {
 
 
   function updateSettingsElementToggle()
-    {
+    { console.log(currentScreenElement);
       if(toggleSettingsElementFlag)
       {
         document.getElementById("setSettingsButton").style.backgroundColor = "#E87D75";
@@ -960,7 +950,7 @@ function colorArray(len) {
         if(currentScreenElement === "STRIPCHART")
         {
           document.getElementById("oscilloscopeScreenElement").style.display = "block";
-          document.getElementById("oscilloscopeScreenElement").style.width = "85%";
+          document.getElementById("oscilloscopeScreenElement").style.width = "96%";
         }
         if(currentScreenElement === "TERMINAL")
         {
@@ -982,19 +972,19 @@ function colorArray(len) {
         if(currentScreenElement === "STRIPCHART")
         {
           document.getElementById("oscilloscopeScreenElement").style.display = "inline-block";
-          document.getElementById("oscilloscopeScreenElement").style.width = "50%";
+          document.getElementById("oscilloscopeScreenElement").style.width = "70%";
           document.getElementById("scopeSettingsElement").style.display = "block";
         }
         if(currentScreenElement === "TERMINAL")
         {
           document.getElementById("terminalScreenElement").style.display = "inline-block";
-          document.getElementById("terminalScreenElement").style.width = "50%";
+          document.getElementById("terminalScreenElement").style.width = "65%";
           document.getElementById("terminalSettingsElement").style.display = "block";
         }
         if(currentScreenElement === "I2C")
         {
           document.getElementById("i2cScreenElement").style.display = "inline-block";
-          document.getElementById("i2cScreenElement").style.width = "50%";
+          document.getElementById("i2cScreenElement").style.width = "65%";
           document.getElementById("i2cSettingsElement").style.display = "block";
         }
         document.getElementById("settingsScreenElement").style.display = "inline-block";
@@ -1005,8 +995,7 @@ function colorArray(len) {
   function updateEverySecond() {
         
         if(!pauseScopeFlag){ 
-          console.log (" every second");
-          console.log(Data_Length);       
+   
             if (Data_Updated == true){
  	            for(var Counter = 0; Counter <= Data_Length-1; Counter++)	{ 
                demograph.update([Test1[Counter], Test2[Counter]]);
@@ -1033,8 +1022,8 @@ function colorArray(len) {
 <style> 
 .SetBoxStyle {
     -webkit-appearance: none;
-    width: 18%;
-    height: 8vh;
+    width: 23%;
+    height: 6vh;
     background-color: #E87D75;
     color: white;
     text-decoration: none;
@@ -1080,12 +1069,9 @@ function colorArray(len) {
 
 
 <body onload="javascript:start();" id="mainBody" style="font-family: Lucida Console, Monaco, monospace; background-color: Gray;">
-<div id="toggleMenuElement" style="text-align:center; height: 10vh; margin-top: 2.5vh; margin-bottom: 2.5vh;">
-    <div style="display:block; width: 85%; height: 70vh; text-align:center; margin-left:7.5%;"> 
-      <a href =/HOME ><button id="setScopeButton" class="SetBoxStyle" onclick="selectScope()">
-        <b>Oscilloscope</b>
-      </button></a><!--NOTE: This comment is to prevent white space between inline blocking elements.
-     --><button id="setTerminalButton" class="SetBoxStyle" onclick="selectTerminal()">
+<div id="toggleMenuElement" style="text-align:center; height: 6vh; margin-top: 2.5vh; margin-bottom: 2.5vh;">
+    <div style="display:block; width: 90%; height: 70vh; text-align:center; margin-left:5%;"> 
+     <button id="setTerminalButton" class="SetBoxStyle" onclick="selectTerminal()">
         <b>Terminal</b>
       </button><!--NOTE: This comment is to prevent white space between inline blocking elements.
     --><button  id="setStripChartButton" class="SetBoxStyle" style="background-color:white; color:black !important" onclick="selectStripChart()">
@@ -1099,18 +1085,17 @@ function colorArray(len) {
       </button> 
       </div>
   </div><!--NOTE: This comment is to prevent white space between inline blocking elements.-->
-    <div id="graphLabels" style="margin-left: 4%; " > <span id="EXTRA_DATA";></span> </div></div>
+    </div>
     <!-- div for legends/labels -->
   <div id="oscilloscopeScreenElement" style="display:inline-block; vertical-align:top; text-align:center; margin-left:2%; width: 96%;">
-    <!--  -->
+    <div id="graphLabels" style="margin-left: 4%; " > <span id="EXTRA_DATA";></span> </div>
     <canvas
         id="graphDemo"
         style="width: 100%; height:70vh; border:2px solid #000000;"
     >
     </canvas> 
     </div>
-    <!-- div for legends/labels -->
-   
+      
     <!-- // NEW STUFF-->
     <!--NOTE: This comment is to prevent white space between inline blocking elements.--->
    <div id="terminalScreenElement" style="display:none; width: 85%; height: 80vh; margin-left:7.5%; font-family:Helvetica; vertical-align:top; text-align:center;">
@@ -1139,7 +1124,7 @@ function colorArray(len) {
     <input type="number" id="i2cWriteField" style="width: 100%; height:10vh; padding:0; border:0; border-radius: 5px; text-decoration: none; text-align:center;" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Write to register"/>
   </div>
 </div>
-<div id="settingsScreenElement" style="width: 33%; display:none; height: 77.5vh; font-family:Helvetica; vertical-align:top; text-align:center; background-color:white; color:#4E4E56; border-radius:5px; margin-left:2%;"><!--NOTE: This comment is to prevent white space between inline blocking elements.
+<div id="settingsScreenElement" style="width: 20%; display:none; height: 77.5vh; font-family:Helvetica; vertical-align:top; text-align:center; background-color:white; color:#4E4E56; border-radius:5px; margin-left:2%;"><!--NOTE: This comment is to prevent white space between inline blocking elements.
   ---><div id="scopeSettingsElement" style="display:block; width:100%; height:77.5vh; overflow-y:auto; ">
       <div class= "VertSelectBox"  > <span class= "SettingsTitle" >Pause</span> <button id="togglePauseButton" class="VertBoxStyle" onclick="togglePause()">
         <b>Pause: Off</b>
@@ -1151,7 +1136,7 @@ function colorArray(len) {
            <option value="DIG">Digital Input 1 </option>
            <option value="4V ADC" >4V ADC</option>
            <option value="64V ADC">64V ADC</option>
-           <option value="TRIANGLE">Triangle test</option>
+           <option value="TRIANGLE">-5+5Triangle test</option>
            
         </select> </div>
       <div class= "VertSelectBox" > <span class= "SettingsTitle" >Channel 2</span> <select id="channelSelectElement2" class="VertBoxStyle" onchange="changeChannelSelect( id , 1);" >
@@ -1162,7 +1147,7 @@ function colorArray(len) {
           <option value="DIG" >Digital Input 2</option>
           <option value="4V ADC">4V ADC</option>
           <option value="64V ADC">64V ADC</option>
-          <option value="TRIANGLE" selected="selected">Triangle test</option>
+          <option value="TRIANGLE" selected="selected">-1+1Triangle test</option>
         </select> </div>
       <div class= "VertSelectBox" > <span class= "SettingsTitle" >Sample Rate</span> <select id="xScaleSampleRateElement" class="VertBoxStyle" onchange="changeSampleRate();" >
           <option value="500" > 0.5ms</option>
@@ -1185,7 +1170,7 @@ function colorArray(len) {
            </select> </div>
 
       <div class= "VertSelectBox" > <span  class= "SettingsTitle" >Trigger </span> <button id="toggleTriggerElement" class="VertBoxStyle"  onclick="toggleTrigger()">
-        <b>Peak Detection: Off</b>
+        <b> Off</b>
       </button> </div>
       <div class= "VertSelectBox" > <span  class= "SettingsTitle" >Log Data</span> <button id="toggleDataLogButton" class="VertBoxStyle"  onclick="toggleDataLog()">
         <b>Log Data: Off</b>
