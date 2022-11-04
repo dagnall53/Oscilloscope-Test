@@ -11,8 +11,8 @@ bool toggledChannelOffFlag1;
 bool toggledChannelOffFlag2;
 byte ADCAddress = 54;  //adc address on 12c
 long offset = 64;
-long CH1Scale = 1;  //DAG new variables for scaling everything
-long CH2Scale = 1;
+float CH1Scale = 1;  //DAG new variables for scaling everything
+float CH2Scale = 1;
 float CH1scaleset = -2.09;
 float CH2scaleset = -2.09;
 unsigned long sendTime = 0;
@@ -23,8 +23,8 @@ byte LastChanRead = 0;
 int MAX_Samples = 320;   // for duplex testing testd to 1000 not found limit. should be set to number across the screen! . 
 
 int NumberofSamplesRead = 0;
-int TestTriangle = 0;
-int TestTriangle1 =0;
+float TestTriangle = 0;
+float TestTriangle1 =0;
 bool _RTS ;
 bool _CTS;
 
@@ -369,7 +369,7 @@ void setADCChannel(int CHANNEL) {
   }
 }
 int ADCRead(void) {
-  //Read channel
+  //Read I2C ADC channel
   Wire.requestFrom(ADCAddress, 2);
   if (Wire.available() > 0) {
     byte ADCResultMSB = Wire.read();
@@ -379,7 +379,7 @@ int ADCRead(void) {
   }
 }
 void ADCHandler(void) {  // DUPLEX MODE reads BOTH channels and builds up the strings to send data in bulk
-  long temp1,temp2;
+  float temp1,temp2;
   //if (getDuplexMode() && !Data_RTS() ) {  // Build up while RTS is false..
    if ( !Data_RTS() ) {  // Build up message for websock while RTS is false..
     temp1=ChannelRead1();temp2=ChannelRead2();
@@ -401,27 +401,27 @@ void ADCHandler(void) {  // DUPLEX MODE reads BOTH channels and builds up the st
       Serial.print(" Duplex(");Serial.print(getDuplexMode());Serial.print(") ");
       if (getChanneMode1() != "OFF") {
         if (getChanneMode1() != "SCALES") {
-          Serial.print(" CHANNEL1 mV : ");
+          Serial.print(" CHANNEL1 V : ");
         } else {
-          Serial.print(" CHANNEL1 grams: ");
+          Serial.print(" CHANNEL1 Kg: ");
         }
-        Serial.print((temp1 * 1000 / 64));
+        Serial.print(temp1);      // SENDING "Truth in floating point"
       }
       if (getChanneMode2() != "OFF") {
         if ((getChanneMode2() == "SCALESB") || (getChanneMode2() == "SCALES")) {
-          Serial.print("   CHANNEL2 grams, ");
+          Serial.print("   CHANNEL2 Kg: ");
         } else {
-          Serial.print("   CHANNEL2 mV, ");
+          Serial.print("   CHANNEL2 V: ");
         }
-        Serial.print(temp2 * 1000 / 64);
+        Serial.print(temp2);      // SENDING "Truth in floating point"
       }
      }
   
  }
 
 
-long ChannelRead1(void) {
-  long temp;
+float ChannelRead1(void) {
+  float temp;
   String Mode;
   Mode=getChanneMode1();
   //Serial.println(Mode);
@@ -435,7 +435,7 @@ long ChannelRead1(void) {
   }
   if (Mode == "INT ADC") {
     CH1Scale = 1024 / 3.3;  //3.3v ref, output in mv1024 not 2048
-    temp = (analogRead(0) / CH1Scale);
+    temp = (float(analogRead(0)) / CH1Scale); // force float?
   }
 
   if (Mode == "SCALES") {
@@ -456,15 +456,17 @@ long ChannelRead1(void) {
   
   if (Mode == "TRIANGLE"){ 
     //Serial.println("mode is triangle");
+    
+    TestTriangle1 = TestTriangle1+0.1;
+    if ( TestTriangle1 >=5){TestTriangle1 =-5;}
     temp = TestTriangle1 ;
-    TestTriangle1 ++;
-    if ( TestTriangle1 >=MAX_Samples+1){TestTriangle1 =0;}
-  }
+    }
+ //Serial.print("CH1 out:"); Serial.println(temp);  
   return temp;
 }
 
-long ChannelRead2(void) {
-  long temp;
+float ChannelRead2(void) {
+  float temp;
   if (getChanneMode2() == "DIG") {
     if (digitalRead(ScopeDigInput0) == 1) {
       temp = 128;  // offset!
@@ -474,8 +476,8 @@ long ChannelRead2(void) {
     CH2Scale = 1;
   }
   if (getChanneMode2() == "INT ADC") {
-    CH2Scale = 1024 / 3.3;  //3.3v ref, output in mv1024 not 2048
-    temp = (analogRead(0) * 4096 / 64) / CH1Scale;
+    CH2Scale = 1024 / 3.3;  //3.3v ref, output in V
+    temp = (analogRead(0)) / CH1Scale;
   }
 
   if (getChanneMode2() == "SCALES") {

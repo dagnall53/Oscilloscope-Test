@@ -36,8 +36,8 @@ void setADCChannel(int CHANNEL);
 int ADCRead(void);
 
 void ADCHandler(void);
-long ChannelRead1 (void);
-long ChannelRead2 (void);
+float ChannelRead1 (void);
+float ChannelRead2 (void);
 
 
 void ADCHandler(byte chan);

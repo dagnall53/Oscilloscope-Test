@@ -39,8 +39,11 @@ var dataLogFlag = false;
 
 
  var Scale =[];
-     Scale[0] = "38";  // CH 1  256/5
-     Scale[1] = "100";  // CH2   256/5
+     Scale[0] = "1";  // CH 1  
+     Scale[1] = "1";  // CH 2   
+ var Offset =[];
+     Offset[0]= "0";
+     Offset[1]= "1";     
 
  var CHSource =[];
      CHSource[0] = "INT ADC";
@@ -359,13 +362,13 @@ function parseDuplexData() {
       if(wsMessageArray.length > 3) { 
         Data_Length=0; 
 				for(var Count = 3; Count <= (wsMessageArray.length-1); Count++)	{ 
-          demograph.updatePoints( [ parseInt(wsMessageArray[Count])/parseInt(Scale[0]), parseInt(wsMessageArray[Count+1])/parseInt(Scale[1]) ] );
+          demograph.updatePoints( [ parseFloat(wsMessageArray[Count])/parseInt(Scale[0]), parseFloat(wsMessageArray[Count+1])/parseInt(Scale[1]) ] );
           Count++;
 					Data_Length ++;
         
         }
         // note use 3 and 4 as index to get first sample only
-        demograph.updateLegends( [ parseInt(wsMessageArray[3])/parseInt(Scale[0]), parseInt(wsMessageArray[4])/parseInt(Scale[1]) ]);
+        demograph.updateLegends( [ parseFloat(wsMessageArray[3])/parseInt(Scale[0]), parseFloat(wsMessageArray[4])/parseInt(Scale[1]) ]);
         demograph.updateTimestamps();
       }
     }
