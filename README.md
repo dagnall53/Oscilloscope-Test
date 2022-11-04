@@ -15,3 +15,4 @@ If a HX711 is present,(and with a 10kg strain gauge), it can display Force measu
 The I2C and Terminal functions have been retained. 
 ![image](https://user-images.githubusercontent.com/6950560/200069121-6060dc1a-fdd6-4684-88f0-ffd7dc79e09c.png)
 
+
