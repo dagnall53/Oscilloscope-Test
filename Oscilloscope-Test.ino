@@ -201,13 +201,13 @@ void loop() {
    // Serial.println("Websocket data Handle");
     webSocketData = "";
   }
-  if ( !getDuplexMode() && (currentTime - oldTime) >= getWS_Timer() ) {
-    LEDFLASH();
-    //Serial.print(".");
-    scopeHandler(webSocket);
-    webSocketData = "";
-    oldTime = currentTime;
-  }
+  // if ( !getDuplexMode() && (currentTime - oldTime) >= getWS_Timer() ) {
+  //   LEDFLASH();
+  //   //Serial.print(".");
+  //   scopeHandler(webSocket);
+  //   webSocketData = "";
+  //   oldTime = currentTime;
+  // }
 // if ( (currentTime - oldTime) >= getWS_Timer() ) {
 //   String json = "{\"KeepAlive\":";
 //   json += "100";
@@ -219,10 +219,10 @@ void loop() {
 
   if ((!PAUSE()) && getDuplexMode() && Data_RTS()  ){
     //  if ( getDuplexMode() && Data_RTS() && Read_CTS() ){
-   // Serial.print("/");Serial.print(readNumberofsamplesRead());
-    //Serial.println(scopeHandler(webSocket));  // scopehandler returns the sent data 
+    Serial.print("/");Serial.print(readNumberofsamplesRead());
+    Serial.println(scopeHandler(webSocket));  // scopehandler returns the sent data 
     LEDFLASH();
-    scopeHandler(webSocket);
+    //scopeHandler(webSocket);
     webSocketData = "";
     oldTime = currentTime;
     ResetNumberofSamplesread();

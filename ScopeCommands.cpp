@@ -158,6 +158,7 @@ void scopeInit(void) {
   setUartScopeData("0");
   ADCInit();
 }
+
 String scopeHandler(WebSocketsServer& WEBSOCKETOBJECT) {
   //   Serial.print("ADCdata1");
   // Serial.println(getADCScopeData1());
@@ -166,7 +167,94 @@ String scopeHandler(WebSocketsServer& WEBSOCKETOBJECT) {
   //Serial.print("scopehandler getchannelmode1[");Serial.print(getChanneMode1());Serial.println("]");
   String _output_summary = "";
 
-  if ((getChanneMode1() == "4V ADC") || (getChanneMode1() == "64V ADC") || (getChanneMode1() == "INT ADC") || (getChanneMode1() == "DIG") || (getChanneMode1() == "SCALES")) 
+        //Serial.print("duplex send");
+        channelModeOutput1 = "SCOPE ADC DUPLEX";
+        channelModeOutput1 += String(getADCScopeData1());  // getADCScopeData1 has special DUPLEX mode that captures BOTH channels 
+        WEBSOCKETOBJECT.broadcastTXT(channelModeOutput1);
+        _output_summary += " [" + channelModeOutput1 + "]";
+        clearADCScopeData1();
+        clearADCScopeData2();        
+        return _output_summary;
+}     
+        
+  //       else { 
+  //      // prevent Scope ADC channel 1 if not ready 
+  //       channelModeOutput1 = "SCOPE ADC DATACHANNEL1";
+  //       channelModeOutput1 += String(getADCScopeData1());
+  //     }
+    
+   
+
+  //   WEBSOCKETOBJECT.broadcastTXT(channelModeOutput1);
+  //   _output_summary += " [" + channelModeOutput1 + "]";
+  // }
+  // if (getChanneMode1() == "UART") {
+  //   toggledChannelOffFlag1 = false;
+  //   channelModeOutput1 = "SCOPE UART DATACHANNEL1";
+  //   channelModeOutput1 += getUartScopeData();
+  //   WEBSOCKETOBJECT.broadcastTXT(channelModeOutput1);
+  //   _output_summary += " [" + channelModeOutput1 + "]";
+  //   clearUartScopeData();
+  // }
+  // if (getChanneMode1() == "OFF") {
+  //   if (!toggledChannelOffFlag1) {
+  //     toggledChannelOffFlag1 = true;
+  //     channelModeOutput1 = "SCOPE OFF DATACHANNEL1";
+  //     channelModeOutput1 += " 0";
+  //     WEBSOCKETOBJECT.broadcastTXT(channelModeOutput1);
+  //     _output_summary += " [" + channelModeOutput1 + "]";
+  //   }
+  // }
+
+  // // for test only Serial.println(channelModeOutput1);
+  // clearADCScopeData1();
+  // //Channel 2
+
+  // if ((getChanneMode2() == "4V ADC") || (getChanneMode2() == "64V ADC") || (getChanneMode2() == "INT ADC") || (getChanneMode2() == "DIG") 
+  //     || (getChanneMode2() == "SCALESB") || (getChanneMode2() == "SCALES") || (getChanneMode2() == "TRIANGLE")) {
+  //   toggledChannelOffFlag2 = false;
+  //   if (!getDuplexMode()) {
+  //   channelModeOutput2 = "SCOPE ADC DATACHANNEL2";
+  //   channelModeOutput2 += String(getADCScopeData2());
+  //   WEBSOCKETOBJECT.broadcastTXT(channelModeOutput2);
+  //   _output_summary += " [" + channelModeOutput2 + "]";
+  //   }
+  // }
+
+
+  // if (getChanneMode2() == "UART") {
+  //   toggledChannelOffFlag2 = false;
+  //   channelModeOutput2 = "SCOPE UART DATACHANNEL2";
+  //   channelModeOutput2 += getUartScopeData();
+  //   WEBSOCKETOBJECT.broadcastTXT(channelModeOutput2);
+  //   _output_summary += " [" + channelModeOutput2 + "]";
+  //   clearUartScopeData();
+  // }
+  // if (getChanneMode2() == "OFF") {
+  //   if (!toggledChannelOffFlag2) {
+  //     toggledChannelOffFlag2 = true;
+  //     channelModeOutput2 = "SCOPE OFF DATACHANNEL2";
+  //     channelModeOutput2 += " 0";
+  //     WEBSOCKETOBJECT.broadcastTXT(channelModeOutput2);
+  //     _output_summary += " [" + channelModeOutput2 + "]";
+  //   }
+  // }
+  // // for test only Serial.println(channelModeOutput2);
+  // clearADCScopeData2();
+  // return _output_summary;
+//   }
+
+
+String scopeHandlerOLD(WebSocketsServer& WEBSOCKETOBJECT) {
+  //   Serial.print("ADCdata1");
+  // Serial.println(getADCScopeData1());
+  // Serial.print("    ADCdata2");
+  //Serial.println(getADCScopeData2());
+  //Serial.print("scopehandler getchannelmode1[");Serial.print(getChanneMode1());Serial.println("]");
+  String _output_summary = "";
+
+  if ((getChanneMode1() == "4V ADC") || (getChanneMode1() == "64V ADC") || (getChanneMode1() == "INT ADC") 
+      || (getChanneMode1() == "SCALES")|| (getChanneMode1() == "DIG") || (getChanneMode1() == "TRIANGLE")) 
   {
     toggledChannelOffFlag1 = false;
     
@@ -212,7 +300,8 @@ String scopeHandler(WebSocketsServer& WEBSOCKETOBJECT) {
   clearADCScopeData1();
   //Channel 2
 
-  if ((getChanneMode2() == "4V ADC") || (getChanneMode2() == "64V ADC") || (getChanneMode2() == "INT ADC") || (getChanneMode2() == "DIG") || (getChanneMode2() == "SCALESB") || (getChanneMode2() == "SCALES")) {
+  if ((getChanneMode2() == "4V ADC") || (getChanneMode2() == "64V ADC") || (getChanneMode2() == "INT ADC") || (getChanneMode2() == "DIG") 
+      || (getChanneMode2() == "SCALESB") || (getChanneMode2() == "SCALES") || (getChanneMode2() == "TRIANGLE")) {
     toggledChannelOffFlag2 = false;
     if (!getDuplexMode()) {
     channelModeOutput2 = "SCOPE ADC DATACHANNEL2";
@@ -291,26 +380,25 @@ int ADCRead(void) {
 }
 void ADCHandler(void) {  // DUPLEX MODE reads BOTH channels and builds up the strings to send data in bulk
   long temp1,temp2;
-  if (getDuplexMode() && !Data_RTS() ) {  // Build up while RTS is false..
+  //if (getDuplexMode() && !Data_RTS() ) {  // Build up while RTS is false..
+   if ( !Data_RTS() ) {  // Build up message for websock while RTS is false..
     temp1=ChannelRead1();temp2=ChannelRead2();
     addADCScopeData1(String(temp1, DEC));  addADCScopeData1(String(temp2, DEC));
     NumberofSamplesRead++;  
   //  if (every(NumberofSamplesRead,50) )  {Serial.print("-");} 
-  //  if (every(NumberofSamplesRead,MAX_Samples) )  {Serial.println("-");}
+    if (every(NumberofSamplesRead,50) )  {Serial.print(Data_RTS());Serial.println("-");}
     if (NumberofSamplesRead >= MAX_Samples) {Set_Data_RTS(true);}// limit number of samples that can be sent in a duplex websock message
     if (getsampleuSTimer() >= 5000) {Set_Data_RTS(true);} // ?? Allow faster update rate for slow samples per second
-  } else 
-  { 
-    addADCScopeData1(String(temp1, DEC));
-    addADCScopeData2(String(temp2, DEC)); 
-  }
+  } 
   if ((getDataLog()) && (getsampleuSTimer() >= 5000)) {   
      sendTime = millis();
       Serial.println("");
       Serial.print("DL Time:");
       Serial.print(sendTime / 1000);
       Serial.print('.');
-      Serial.print(sendTime % 1000);
+      Serial.print(sendTime % 1000); // debugging follows ...
+      Serial.print("  #");Serial.print(NumberofSamplesRead);Serial.print(" RTS(");Serial.print(Data_RTS());Serial.print(") ");
+      Serial.print(" Duplex(");Serial.print(getDuplexMode());Serial.print(") ");
       if (getChanneMode1() != "OFF") {
         if (getChanneMode1() != "SCALES") {
           Serial.print(" CHANNEL1 mV : ");
@@ -347,7 +435,7 @@ long ChannelRead1(void) {
   }
   if (Mode == "INT ADC") {
     CH1Scale = 1024 / 3.3;  //3.3v ref, output in mv1024 not 2048
-    temp = (analogRead(0) * 4096 / 64) / CH1Scale;
+    temp = (analogRead(0) / CH1Scale);
   }
 
   if (Mode == "SCALES") {
@@ -372,7 +460,6 @@ long ChannelRead1(void) {
     TestTriangle1 ++;
     if ( TestTriangle1 >=MAX_Samples+1){TestTriangle1 =0;}
   }
-  Serial.print("mode is");Serial.print(Mode);Serial.print(" val is");Serial.println(temp);
   return temp;
 }
 

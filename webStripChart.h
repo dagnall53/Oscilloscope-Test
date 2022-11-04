@@ -332,7 +332,7 @@ function toggleTrigger()
       };
       websock.onmessage = function(evt)
       {
-        //console.log(evt);
+        console.log(evt);
         wsMessageArray = evt.data.split(" ");
         if(wsMessageArray.length >= 2)
         {

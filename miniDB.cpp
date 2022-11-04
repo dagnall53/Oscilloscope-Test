@@ -67,6 +67,7 @@ int getWS_Timer(void)   // now is the update rate for the Websock send
 /////////////////
 void setDataLog(bool LOG)
 {
+  Serial.println("");
   Serial.print(" Setting data logger to:");
   Serial.print(LOG);
   dataLogFlag = LOG;
