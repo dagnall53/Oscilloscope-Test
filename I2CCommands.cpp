@@ -91,6 +91,38 @@ void scanI2CRegisters(WebSocketsServer &WEBSOCKETOBJECT, byte ADDRESS)
     }
   }
 }
+
+boolean SinglescanI2CAddress(byte address)
+{
+  byte error;
+  boolean found;
+  int nDevices;
+  String newDevice = "";
+  nDevices = 0;
+       found=0;
+       Wire.beginTransmission(address);
+       error = Wire.endTransmission();
+     
+        if (error == 0)
+        {
+          found=1;
+          newDevice = "SERIAL I2C DEVICE ";
+          if (address<16)
+          {
+            newDevice += "0";
+          }
+          newDevice += String(address, DEC);
+          Serial.print(" Found device (DEC):");
+          Serial.println(newDevice);  //DAG tests to check this works 
+          nDevices++;
+        }
+        else{
+        Serial.print(" NO device<");
+        Serial.print(address);
+        Serial.println("> found ");
+        }
+        return found;
+    }
 boolean SinglescanI2CAddress(WebSocketsServer &WEBSOCKETOBJECT,byte address)
 {
   byte error;

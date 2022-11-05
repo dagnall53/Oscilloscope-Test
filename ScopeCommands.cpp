@@ -53,6 +53,13 @@ void Set_Data_RTS( bool set){
   _RTS = set;
 }
 
+void SendHW_LIST(WebSocketsServer& WEBSOCKETOBJECT){
+        channelModeOutput1 = "Hardware_LIST_(scales,50,60) ";
+        channelModeOutput1 += String(ScalesConnected());  channelModeOutput1 += " " ;
+        channelModeOutput1 += String(SinglescanI2CAddress(50)); channelModeOutput1 += " " ;
+        channelModeOutput1 += String(SinglescanI2CAddress(60));
+        WEBSOCKETOBJECT.broadcastTXT(channelModeOutput1);
+}
 
 void ResetNumberofSamplesread(){
 NumberofSamplesRead =0;

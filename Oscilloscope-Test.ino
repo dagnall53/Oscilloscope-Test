@@ -162,6 +162,7 @@ void setup() {
   Serial.println(SinglescanI2CAddress(webSocket, 50));
   Serial.println("testing for HX 711   ");
   ScalesInit(_Data, _Clock);  // needs to still work if no hx711!
+  if (ScalesConnected() ) {Serial.println(" HX711 connected ");}else{Serial.println("NO SCALES Fitted");}
   ADC1READ = 0;
   Serial.println("Waiting for browser to connect");
   clearADCScopeData1();

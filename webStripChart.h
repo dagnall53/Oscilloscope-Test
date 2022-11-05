@@ -1,5 +1,5 @@
 // https://www.cssscript.com/line-chart-picograph/
-// https://github.com/RainingComputers/picograph.js
+// 
 
 
 
@@ -50,6 +50,10 @@ var dataLogFlag = false;
      CHSource[1] = "TRIANGLE";     
      CHSource[3] = "BINARY"; 
 
+ var SCALESPresent = false;  
+ var I2C_50_ADCPresent = false;
+ var I2C_60_ADCPresent = false;
+
  var sampleRate = 10000; // just a temporary setup   
 
  var terminalEchoFlag = false;
@@ -65,6 +69,9 @@ var dataLogFlag = false;
     var i2cRegisterArray = [];
     var lastI2CDeviceAddress = null;
     var lastI2CControlRegister = null;
+
+ 
+   
 
 //*********  Data Display ******
 //function createLegendRect(labelDivID, color, label, valueID,i) {
@@ -350,11 +357,28 @@ function toggleTrigger()
           if(wsMessageArray[0] === "SERIAL")
            {
            serialEventHandler();
+          }  
+          if(wsMessageArray[0] === "Hardware_LIST_(scales,50,60)")
+          {
+            HW_List_EventHandler();
           }
         }
       };
       
     }
+
+function HW_List_EventHandler(){
+  //console.log(wsMessageArray);
+  SCALESPresent = false;
+  I2C_50_ADCPresent = false;
+  I2C_60_ADCPresent = false; 
+  if(wsMessageArray[1] === "1"){SCALESPresent = true; }
+  if(wsMessageArray[2] === "1"){I2C_50_ADCPresent = true;}
+  if(wsMessageArray[3] === "1"){I2C_60_ADCPresent = true;}
+  DisableNonPresentOptions();
+}
+
+
 
 function parseDuplexData() {
   // updatepoints replacement
@@ -386,7 +410,7 @@ function parseDuplexData() {
 
 function UpdateDisplay(){
   // copy of .update, but without adding data..
-//console.log( "UPDATE DISPLAY");   
+  //console.log( "UPDATE DISPLAY");   
   demograph.clear()
   demograph.setWidthHeightAndCssScale()
         
@@ -418,7 +442,52 @@ function selectStripChart()
         SampleRateUpdate(10000); // 10ms in us
         websock.send("SCOPE WS_Timer 200");
         ClearStripChart();
+        DisableNonPresentOptions(); // test with all disabled in setup
+        websock.send("REQUEST HW LIST");
+                
+ }
+
+  
+
+ function DisableNonPresentOptions(){
+   // var selector = document.getElementById('channelSelectElement1');
+     //  Add/ Remove disabled attribute from whole ID
+     // selector.removeAttribute('disabled');
+     // or add
+     // selector.setAttribute('disabled', '');
+  // only for setting innert html if needed later.. 
+     //var HW_notPresent = "-Missing-";
+    //var SCALES_Present = "HX711 Scales Ch_A"
+    //var ADC_Present = "I2C ADC"
+    console.log(" Setting up HW  %s %s %s ",SCALESPresent,I2C_50_ADCPresent,I2C_60_ADCPresent);
+
+
+   // enable all attributes first (allows this function to be called more than once with different HW present)
+   // this is not needed now, but maybe in future:
          
+      document.getElementById('Scales_ID').removeAttribute('disabled');
+      document.getElementById('Scales_ID1').removeAttribute('disabled'); 
+      document.getElementById('Scales_ID2').removeAttribute('disabled');  
+      document.getElementById("ADC_ID").removeAttribute('disabled');       
+      document.getElementById("ADC_ID2").removeAttribute('disabled');  
+      document.getElementById("ADC_ID1").removeAttribute('disabled');  
+      document.getElementById("ADC_ID3").removeAttribute('disabled'); 
+
+    
+    if (!SCALESPresent){
+      document.getElementById('Scales_ID').setAttribute('disabled', '');
+      document.getElementById('Scales_ID1').setAttribute('disabled', ''); 
+      document.getElementById('Scales_ID2').setAttribute('disabled', '');  
+      } 
+
+     
+    if (!I2C_50_ADCPresent){
+      document.getElementById("ADC_ID").setAttribute('disabled', '');       
+      document.getElementById("ADC_ID2").setAttribute('disabled', '');  
+      } 
+    if (!I2C_60_ADCPresent){
+      document.getElementById("ADC_ID1").setAttribute('disabled', '');  
+      document.getElementById("ADC_ID3").setAttribute('disabled', ''); } 
  }
 
  //*********Timing changes
@@ -527,18 +596,15 @@ function createValueIDs(labels, canvasID) {
     return valueIDs
 }
 function createLegendRect(labelDivID, color, label, valueID,  i) {
+    const sourceSpan= `<span id="CH_SourceID[`+i+`]">${CHSource[i]}</span>`;       
     const labelSpan = `<span>${label}</span>`
-    const stringVal = "\"CH_SourceID[" + String(i) + "]\"";  
-    const sourceSpan= `<span id=`+stringVal+`>${CHSource[i]}</span>`;   
     const valueSpan = label.at(-1) == ":" ? `<span id="${valueID}"></span>` : ""
     byID(labelDivID).innerHTML += `
         <div style="display: inline-block;">
-            <svg width="10" height="10">
-                <rect width="10" height="10" style="fill: ${color}"/>
-            </svg> 
+            <svg width="10" height="10"> <rect width="10" height="10" style="fill: ${color}"/>
+               </svg> 
             ${labelSpan}<small>(${sourceSpan})</small>:${valueSpan}  
-            
-        <div>
+         div>
     `
 }
 
@@ -1020,6 +1086,8 @@ function colorArray(len) {
 
 </head>
 <style> 
+
+
 .SetBoxStyle {
     -webkit-appearance: none;
     width: 23%;
@@ -1131,22 +1199,22 @@ function colorArray(len) {
       </button> </div>
       <div class= "VertSelectBox" > <span class= "SettingsTitle" >Channel 1</span> <select id="channelSelectElement1" class="VertBoxStyle" onchange="changeChannelSelect( id , 0 );">
            <option value="OFF">Off</option>
-           <option value="SCALES">HX711 Scales Ch_A</option> 
+           <option id="Scales_ID" value="SCALES">HX711 Scales Ch_A</option> 
            <option value="INT ADC"selected="selected">Internal ADC (A0)</option> 
-           <option value="DIG">Digital Input 1 </option>
-           <option value="4V ADC" >4V ADC</option>
-           <option value="64V ADC">64V ADC</option>
+           <option value="DIG">Digital Inputs</option>
+           <option id="ADC_ID" value="4V ADC" >4V ADC</option>
+           <option id="ADC_ID1" value="64V ADC">64V ADC</option>
            <option value="TRIANGLE">-5+5Triangle test</option>
            
         </select> </div>
       <div class= "VertSelectBox" > <span class= "SettingsTitle" >Channel 2</span> <select id="channelSelectElement2" class="VertBoxStyle" onchange="changeChannelSelect( id , 1);" >
           <option value="OFF">Off</option>
-          <option value="SCALES">HX711 Scales Ch_A</option> 
-          <option value="SCALESB">HX711 Scales Ch_B</option> 
+          <option id="Scales_ID1" value="SCALES">HX711 Scales Ch_A</option> 
+          <option id="Scales_ID2" value="SCALESB">HX711 Scales Ch_B</option> 
           <option value="INT ADC">Internal ADC (A0)</option>
-          <option value="DIG" >Digital Input 2</option>
-          <option value="4V ADC">4V ADC</option>
-          <option value="64V ADC">64V ADC</option>
+          <option value="DIG" >Digital Inputs/option>
+          <option id="ADC_ID2" value="4V ADC">4V ADC</option>
+          <option id="ADC_ID3" value="64V ADC">64V ADC</option>
           <option value="TRIANGLE" selected="selected">-1+1Triangle test</option>
         </select> </div>
       <div class= "VertSelectBox" > <span class= "SettingsTitle" >Sample Rate</span> <select id="xScaleSampleRateElement" class="VertBoxStyle" onchange="changeSampleRate();" >

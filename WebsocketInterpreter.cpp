@@ -1,16 +1,18 @@
 #include "WebsocketInterpreter.h"
 
 
-
+String DataOutput1;
 extern void handleTest();
 void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKETDATA)
 {
   String topLevelToken = "";
   String subLevelToken = "";
   String serialClear = "SERIAL UART CLEAR";
- // Serial.println("New data received: " + WEBSOCKETDATA); //  turn on for debugging!
+  Serial.println("New data received: " + WEBSOCKETDATA); //  turn on for debugging!
 
-
+if(WEBSOCKETDATA.startsWith("REQUEST HW LIST")){
+  SendHW_LIST(WEBSOCKETOBJECT);
+  }
   
  if(WEBSOCKETDATA.startsWith("Data_accepted"))
   { 

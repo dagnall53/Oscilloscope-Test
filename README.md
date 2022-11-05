@@ -15,4 +15,12 @@ If a HX711 is present,(and with a 10kg strain gauge), it can display Force measu
 The I2C and Terminal functions have been retained. 
 ![image](https://user-images.githubusercontent.com/6950560/200069121-6060dc1a-fdd6-4684-88f0-ffd7dc79e09c.png)
 
+# Notes
+Channel select options for NOT FITTED hardware, such as the HX711 for scales, or the I2C ADC on 50 and 60 are now Greyed out.
+This test is conducted only at power up, so reset the esp if you add / disconnect these. 
+Digital inputs (D7/D6) are presented as simple binary scale: D7 is 2Vor 0V, D6 is 1V or 0V, allowing the "digital channel" to monitor two inputs simulaneously.
+Connecting D7 to ground during power up will force the unit to AP mode. Connect to "Oscilloscope" and 192.168.4.1 
+Otherwise Wifi manager will automatically attempt to connect to known network, or present an options list on 192.168.4.1 
+
+
 

@@ -38,7 +38,7 @@ int ADCRead(void);
 void ADCHandler(void);
 float ChannelRead1 (void);
 float ChannelRead2 (void);
-
+void SendHW_LIST(WebSocketsServer& WEBSOCKETOBJECT);
 
 void ADCHandler(byte chan);
 void ScalesInit(byte Data,byte Clock);
