@@ -4,6 +4,11 @@
 void SetBaud (int input);
  int BaudRate();
 
+int MAX_Samples();
+void SetNSamples(int samples); // Updating N samples for size of the batch 
+
+void DoingOTA( bool input);
+bool OTA_ON();
 
 
 //TIMER VARIABLE

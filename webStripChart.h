@@ -89,27 +89,28 @@ var dataLogFlag = false;
    <br>  `   
   } 
  
-function displayMyVar(targetElementId) {
+  function displayMyVar(targetElementId) 
+  {
                 document.getElementById(targetElementId).innerHTML = myVar;
-            }
+  }
 
    
 
     //*************I2C************ 
-    function selectI2C()
+  function selectI2C()
     {
       currentScreenElement = "I2C";
       updateButtonSelect(currentScreenElement);
       i2cFindDevices();
     }
-    function i2cClearDeviceField()
+  function i2cClearDeviceField()
     {
       var i2cOutputDeviceWrapperDiv = document.getElementById('i2cOutputDeviceWrapper');
       i2cOutputDeviceWrapperDiv.innerHTML = '<button style="-webkit-appearance: none; width: 90%; height: 10vh; background-color:white; color:#4E4E56; text-decoration: none; border: 0; padding: 0; border-radius: 5px; font-family:Helvetica;"><b>Devices On I2C Bus</b></button>';
       i2cOutputDeviceWrapperDiv.scrollTop = i2cOutputDeviceWrapperDiv.scrollHeight;
     }
 
-    function i2cClearRegisterField()
+  function i2cClearRegisterField()
     {
     lastI2CControlRegister = null;
     document.getElementById("i2cWriteField").placeholder = "Select a register to write";
@@ -118,7 +119,7 @@ function displayMyVar(targetElementId) {
       i2cOutputRegisterWrapperDiv.scrollTop = i2cOutputRegisterWrapperDiv.scrollHeight;
     }
 
-    function i2cFindDevices()
+  function i2cFindDevices()
     {
       i2cClearDeviceField();
       i2cClearRegisterField();
@@ -138,7 +139,9 @@ function displayMyVar(targetElementId) {
       i2cAddressToRequest += deviceAddress;
       websock.send(i2cAddressToRequest);
     }
-    
+
+
+
   function i2cUpdateControlRegister(controlRegister)
   {
     if(lastI2CControlRegister != null)
@@ -154,8 +157,16 @@ function displayMyVar(targetElementId) {
 
 
     //************end I2C
+
+  function sendNPoints(){
+    var data2send = "ScopeNpoints ";
+      data2send += demograph.nPoints;
+      websock.send(data2send);
+  }   
+
+
     //******** terminal *********
- function toggleTerminalEcho()
+  function toggleTerminalEcho()
     {
       if(terminalEchoFlag)
       {
@@ -169,9 +180,9 @@ function displayMyVar(targetElementId) {
         document.getElementById("toggleTerminalEchoButton").innerHTML = "<b>Echo: On</b>"
         document.getElementById("toggleTerminalEchoButton").style.backgroundColor = "#4E4E56";
       }
-    }
+  }
 
-function toggleTrigger()
+ function toggleTrigger()
     {
       if(triggerDetectionFlag)
       {
@@ -185,9 +196,9 @@ function toggleTrigger()
         document.getElementById("toggleTriggerElement").innerHTML = "<b>Trigger : On</b>";
         document.getElementById("toggleTriggerElement").style.backgroundColor = "#4E4E56";
       }
-    }
+  }
 
-     function toggleDataLog()
+  function toggleDataLog()
     {
       if(dataLogFlag)
       {
@@ -369,7 +380,7 @@ function toggleTrigger()
       
     }
 
-function HW_List_EventHandler(){
+ function HW_List_EventHandler(){
   //console.log(wsMessageArray);
   SCALESPresent = false;
   I2C_50_ADCPresent = false;
@@ -378,17 +389,21 @@ function HW_List_EventHandler(){
   if(wsMessageArray[2] === "1"){I2C_50_ADCPresent = true;}
   if(wsMessageArray[3] === "1"){I2C_60_ADCPresent = true;}
   DisableNonPresentOptions();
-}
+ }
 
 
 
-function parseDuplexData() {
-  // updatepoints replacement
- 
+ function parseDuplexData() {
+ //console.log("Start ParseDuplex");
+//  console.log(wsMessageArray[1]);
+//  console.log(wsMessageArray[2]);
+//  console.log(wsMessageArray[3]);
+//  console.log("... ParseDuplex %i ", wsMessageArray.length);
+  websock.send("CTS  0"); 
  if(wsMessageArray[1] === "ADC") {
     if(wsMessageArray[2] === "DUPLEX") {  
-
       if(wsMessageArray.length > 3) { 
+     
         Data_Length=0; 
 				for(var Count = 3; Count <= (wsMessageArray.length-1); Count++)	{ 
           demograph.updatePoints( [ parseFloat(Offset[0])+parseFloat(wsMessageArray[Count]), parseFloat(Offset[1])+parseFloat(wsMessageArray[Count+1]) ] );
@@ -397,20 +412,20 @@ function parseDuplexData() {
         
         }
         // note use 3 and 4 as index to get first sample only
+        //console.log ( " parseDuplexData() read: %i", Data_Length);
         demograph.updateLegends( [ parseFloat(wsMessageArray[3]), parseFloat(wsMessageArray[4]) ]);
         demograph.updateTimestamps();
       }
     }
-  // console.log ( " parseDuplexData() reading:%d points",Data_Length );
-  // NOT HERE! createDataRect("EXTRA_DATA");
   UpdateDisplay();
-   
+  
+
   } 
 
 
-}
+ }
 
-function UpdateDisplay(){
+ function UpdateDisplay(){
   // copy of .update, but without adding data..
   //console.log( "UPDATE DISPLAY");   
   demograph.clear()
@@ -422,9 +437,10 @@ function UpdateDisplay(){
   demograph.drawHorizontalLines()
   if (demograph.timestamps) {demograph.drawTimestamps()}
   demograph.drawGraph()
-}
+  websock.send("CTS  1"); 
+ }
 
-function selectStripChart()
+ function selectStripChart()
     {
       currentScreenElement = "STRIPCHART";
       updateButtonSelect(currentScreenElement);
@@ -434,7 +450,7 @@ function selectStripChart()
 
  function ClearStripChart(){
        websock.send("Data_accepted "); // Clears up flags
-        websock.send("Clear_to_send ");   // should initiate first websock send.. 
+        websock.send("CTS  1");   // should initiate first websock send.. 
         websock.send("PicoGraph setup Finished "); 
  }   
 
@@ -446,6 +462,8 @@ function selectStripChart()
         ClearStripChart();
         DisableNonPresentOptions(); // test with all disabled in setup
         websock.send("REQUEST HW LIST");
+        sendNPoints();
+        websock.send("SCOPE PAUSE OFF");
                 
  }
 
@@ -518,7 +536,7 @@ function selectStripChart()
    }    
 
 
-function checkforSPSTiming( element){
+ function checkforSPSTiming( element){
   //console.log(" SPScheck "); console.log(element);
   if ( ( (element = "SCALES") || (element = "SCALESB") ) && (xPlotSampleRate <= 20000) ) {        
          document.getElementById("xScaleSampleRateElement").value=20000;  // change the select box 
@@ -557,7 +575,7 @@ function checkforSPSTiming( element){
     
   }  
 
-    function togglePause()
+  function togglePause()
     {
       if(pauseScopeFlag)
       {
@@ -566,24 +584,27 @@ function checkforSPSTiming( element){
         document.getElementById("togglePauseButton").innerHTML = "<b>Pause: Off</b>";
         document.getElementById("togglePauseButton").style.backgroundColor = "#E87D75";
         //clearPlot();
+        sendNPoints();  // use this time to update npoints
       }
       else
       { websock.send("SCOPE PAUSE ON");
         pauseScopeFlag = true;
         document.getElementById("togglePauseButton").innerHTML = "<b>Pause: On</b>";
         document.getElementById("togglePauseButton").style.backgroundColor = "#4E4E56";
+        sendNPoints();  // use this time to update npoints
       }
-    }
-function ChangeDotSize(){
+  }
+
+  function ChangeDotSize(){
   ScopeDotSize= document.getElementById("ScopeDotSizeElement").value;
-}
+  }
  function SendWS() {
    WebSockTimeIntervalMS = document.getElementById("WSSendPeriodElement").value;
         data2send="";
         data2send = "SCOPE WS_Timer ";
         data2send += (WebSockTimeIntervalMS );  // send ms
        websock.send(data2send);
- }   
+  }   
  
  function byID(id) {
     return document.getElementById(id)
@@ -1070,9 +1091,9 @@ function colorArray(len) {
                } 
              Data_Length = 0;
              Data_Updated = false;
-             websock.send("Clear_to_send "); 
+             websock.send("CTS  1"); 
             } else 
-            {console.log (" No Data ");websock.send("Clear_to_send ");} 
+            {console.log (" No Data ");websock.send("CTS  1 ");} 
         } 
          
       }

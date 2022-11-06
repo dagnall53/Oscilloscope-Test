@@ -172,8 +172,8 @@ void setup() {
     Serial.println(WiFi.localIP());
   clearADCScopeData1();
   clearADCScopeData2();
-  setPAUSE(false);
-  
+  setPAUSE(true);  // do not start ADC immediately!
+  DoingOTA(false);
  // Set_Data_RTS (true);
  // Set_CTS (true);
 }
@@ -195,7 +195,7 @@ void loop() {
   webSocket.loop();
   server.handleClient();
   //Original
-  if ((currentTime - oldTimeADC) >= (getsampleuSTimer()/1000) ) {  //  sample rate is sent in us 
+  if ( Read_CTS() && ((currentTime - oldTimeADC) >= (getsampleuSTimer()/1000) ) ) {  //  sample rate is sent in us  BUT ONLY sample if Broser is OK to recieve!
     ADCHandler(); // now handles duplex 
     oldTimeADC = currentTime;
   }
@@ -205,8 +205,8 @@ void loop() {
    // Serial.println("Websocket data Handle");
     webSocketData = "";
   }
-
-  if ((!PAUSE()) && getDuplexMode() && Data_RTS()  ){
+  if ((!PAUSE())  && Data_RTS()  ){
+    //if ((!PAUSE()) && getDuplexMode() && Data_RTS()  ){
     //  if ( getDuplexMode() && Data_RTS() && Read_CTS() ){
     //Serial.print("/");Serial.print(readNumberofsamplesRead());
     //Serial.println(scopeHandler(webSocket));  // scopehandler returns the sent data 
@@ -234,9 +234,11 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
   switch (type) {
     case WStype_DISCONNECTED:
       Serial.printf("[%u] Disconnected!\r\n", num);
-      webSocket.close();
-      WebserverSetup();
-      Serial.printf("[%u] ATTEMPTING RESTART OF WEBSERVER!\r\n", num);  // not compatible with  OTA?
+      if (!OTA_ON()){
+        webSocket.close();
+        WebserverSetup();
+        Serial.printf("[%u] ATTEMPTING RESTART OF WEBSERVER!\r\n", num);  // not compatible with  OTA?
+      }
       break;
     case WStype_CONNECTED:
       {
@@ -389,6 +391,7 @@ void OTASettings() {
     // Upload firmware page
     server.on("/ota", HTTP_GET, []() {
     ///StopPorts();  // DAGNALL, note this is NEEDED in NMEA3 here!, not later on! If not stopped, 
+    DoingOTA(true); // stops disconnect!
     String html = ""; 
     //html += FPSTR(Header); 
     html += "&nbsp;</div></div>";
@@ -404,6 +407,7 @@ void OTASettings() {
     //StopPorts();  // leaving here just in case it did something..
     server.send(200, "text/plain", (Update.hasError()) ? "Update: fail\n" : "Update: OK!\n");
     delay(500);
+    DoingOTA(false);
     ESP.restart();
   }, []() {
     HTTPUpload& upload = server.upload();

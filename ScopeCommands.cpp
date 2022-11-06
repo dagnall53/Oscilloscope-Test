@@ -20,7 +20,7 @@ long TAREA = 0;
 long TAREB = 0;
 byte LastChanRead = 0;
 
-int MAX_Samples = 320;   // for duplex testing testd to 1000 not found limit. should be set to number across the screen! . 
+//int MAX_Samples = 320;   // for duplex testing testd to 1000 not found limit. should be set to number across the screen! . 
 
 int NumberofSamplesRead = 0;
 float TestTriangle = 0;
@@ -41,6 +41,8 @@ bool Read_CTS (void){
   return _CTS;
 }
 void Set_CTS (bool set) {
+ //if (set) {Serial.println( "CTS ON ");}else{Serial.println ( "CTS OFF ");}
+ if (set) {Serial.print( "<");}
  _CTS = set;
 }
 
@@ -237,12 +239,12 @@ void ADCHandler(void) {  // DUPLEX MODE ONLY reads BOTH channels and builds up t
   //if (getDuplexMode() && !Data_RTS() ) {  // Build up while RTS is false..
    if ( !Data_RTS() ) {  // Build up message for websock while RTS is false..
     temp1=ChannelRead1();temp2=ChannelRead2();
-    addADCScopeData1(String(temp1, DEC));  addADCScopeData1(String(temp2, DEC));
+    addADCScopeData1(String(temp1, 3));  addADCScopeData1(String(temp2, 3));  // 3 dp
     NumberofSamplesRead++;  
-  //  if (every(NumberofSamplesRead,50) )  {Serial.print("-");} 
-    if (every(NumberofSamplesRead,50) )  {Serial.print(Data_RTS());Serial.println("-");}
-    if (NumberofSamplesRead >= MAX_Samples) {Set_Data_RTS(true);}// limit number of samples that can be sent in a duplex websock message
-    if (getsampleuSTimer() >= 5000) {Set_Data_RTS(true);} // ?? Allow faster update rate for slow samples per second
+    if (every(NumberofSamplesRead,50) )  {Serial.print("-");} 
+    //if (every(NumberofSamplesRead,50) )  {Serial.print(Data_RTS());Serial.println("-");}
+    if (NumberofSamplesRead >= MAX_Samples()) {Set_Data_RTS(true);   Serial.println(">");       }// limit number of samples to the screen width 
+    if (getsampleuSTimer() >= 5000) {Set_Data_RTS(true);Serial.println(">"); } // ?? Allow faster update rate for slow samples per second
   } 
   if ((getDataLog()) && (getsampleuSTimer() >= 5000)) {   
      sendTime = millis();

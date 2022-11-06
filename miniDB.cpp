@@ -6,12 +6,23 @@ bool dataTAREFlag;
 bool uartScopeFlag;
 bool DuplexModeFlag;
 bool _scopePause;
+bool _OTA_ACTIVE;
 String uartScopeData;
 String adcScopeData1;
 String adcScopeData2;
 String channelMode1;
 String channelMode2;
 int _baudRate;
+int _MAX_Samples = 320;   // for duplex testing testd to 1000 not found limit. should be set to number across the screen! . 
+
+int MAX_Samples(){
+  return _MAX_Samples;
+}
+
+void SetNSamples(int samples){
+  _MAX_Samples = samples;
+  Serial.print("Updating N samples for fast sampling to:");Serial.println(_MAX_Samples);
+}
 
 
 // terminal variables
@@ -24,8 +35,12 @@ void SetBaud (int input){
   return _baudRate;  
  }
 
-
-
+void DoingOTA( bool input){
+ _OTA_ACTIVE = input;
+ }
+bool OTA_ON(){
+  return _OTA_ACTIVE;
+}
 
 /////////////////
 //TIMER VARIABLE

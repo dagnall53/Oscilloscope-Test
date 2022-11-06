@@ -8,22 +8,27 @@ void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKE
   String topLevelToken = "";
   String subLevelToken = "";
   String serialClear = "SERIAL UART CLEAR";
-  Serial.println("New data received: " + WEBSOCKETDATA); //  turn on for debugging!
+ // Serial.println("New data received: " + WEBSOCKETDATA); //  turn on for debugging!
 
-if(WEBSOCKETDATA.startsWith("REQUEST HW LIST")){
+  if(WEBSOCKETDATA.startsWith("REQUEST HW LIST")){
   SendHW_LIST(WEBSOCKETOBJECT);
   }
   
+  if(WEBSOCKETDATA.startsWith("ScopeNpoints")){
+    topLevelToken = "ScopeNpoints";
+   SetNSamples(WEBSOCKETDATA.substring(topLevelToken.length()).toInt());
+   }
+  
  if(WEBSOCKETDATA.startsWith("Data_accepted"))
   { 
-  //  Serial.println(" Data Accepted reset RTS so we can read more.. ");
+    Serial.println("WebBrowser Data Accepted ");
     Set_Data_RTS (false); 
     //Set_CTS(false);
   }
 
- if (WEBSOCKETDATA.startsWith("Clear_to_send")){
-  // Serial.println(" _CTS ");
-    Set_CTS(true);
+ if (WEBSOCKETDATA.startsWith("CTS")){
+       topLevelToken = "CTS ";
+   Set_CTS(WEBSOCKETDATA.substring(topLevelToken.length()).toInt());
 
  }
 if(WEBSOCKETDATA.startsWith("SERIAL_BAUD"))
