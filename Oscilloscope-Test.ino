@@ -116,7 +116,7 @@ void setup() {
     WiFi.softAP(ssid, password);
     Serial.println();
     Serial.println("Booting in AP mode");
-    Serial.println("Go to 192.168.4.1 to access the scope");
+    Serial.println("Go to 192.168.4.1 to access the oscilloscope");
     Serial.println("NOTE: OTA is NOT available in AP mode");
   } else {
     Serial.println();
@@ -125,7 +125,7 @@ void setup() {
     wifiManager.autoConnect(ssid, password);
     Serial.println();
     Serial.print("IP address: ");
-    if (!MDNS.begin("scope")) {
+    if (!MDNS.begin("oscilloscope")) {
       Serial.println("Error setting up MDNS responder!");
       while (1) {
         delay(1000);
@@ -135,7 +135,7 @@ void setup() {
 
     WiFi.softAP(ssid, password);  // and keep standard ap on 192.168.4.1
 
-    Serial.print("Connect to http://scope.local or http://");
+    Serial.print("Connect to http://oscilloscope.local or http://");
     Serial.println(WiFi.localIP());
 
     MDNS.addService("http", "tcp", 80);
@@ -162,6 +162,8 @@ void setup() {
   if (ScalesConnected() ) {Serial.println(" HX711 connected ");}else{Serial.println("NO SCALES Fitted");}
   ADC1READ = 0;
   Serial.println("Waiting for browser to connect");
+  Serial.print("Connect to http://oscilloscope.local or http://");
+    Serial.println(WiFi.localIP());
   clearADCScopeData1();
   clearADCScopeData2();
   setPAUSE(false);
