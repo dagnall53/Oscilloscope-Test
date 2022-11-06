@@ -9,10 +9,10 @@ const char OTA_STYLE[] PROGMEM = "<style>#file-input,input{width:100%;height:35p
 ".btn{background:#0F458D;color:#fff;cursor:pointer}</style>";
 
 const char OTA_START[] PROGMEM = "<br><br><div class=\"div2\">\r\n"
- "Click  CHOOSE FILE ...  Then press  UPLOAD<br>\r\n"
+ "<center>Click  CHOOSE FILE ...  Then press  UPLOAD<br>\r\n"
  "THEN wait until the progress bar reaches 100%. <br>You still need to wait until you receive a Success\r\n"
  "Message. <br>When that happens the unit has self reset and you need to connect to the new created Wifi\r\n"
- "network and check or set your settings<br><a href=\"/.\">Click this text to return to previous screen</a><br>\r\n"; 
+ "network and check or set your settings<br><a href=\"/.\">Click this text (twice!) to return to previous screen</a></center><br>\r\n"; 
 
 const char OTA_UPLOAD[] PROGMEM = R"=+=+(
 <form method="POST" action="ota" enctype="multipart/form-data" id="upload_form">

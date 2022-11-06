@@ -8,7 +8,7 @@ static const char PROGMEM STRIP_HTML[] = R"rawliteral(
 <html>
 
 <head>
-    <title> PicoGraphDemo </title>
+    <title>StripChart -Scope- Tool</title>
  
  <script>
  // copied from Original picograph added PS in case of problems

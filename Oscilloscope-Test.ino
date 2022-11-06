@@ -25,7 +25,7 @@ static const uint8_t LED = 16;
   #include <WebServer.h>
  #else
   #include <ESP8266WiFi.h>
- // #include <ESP8266WiFiMulti.h>
+  #include <ESP8266WiFiMulti.h>
  // #include <Hash.h>  // used by arduinoota??
   #include <ESP8266WebServer.h>
   #include <ESP8266mDNS.h>
@@ -37,7 +37,7 @@ static const uint8_t LED = 16;
 
 #include <WiFiClient.h>
 #include <WiFiUdp.h>
-
+#include <ArduinoOTA.h>
 #include <DNSServer.h>
 #include <WiFiManager.h>  // WIFI Manager by tzapu (tested 2.0.14)
 #include <Wire.h>
@@ -89,12 +89,12 @@ MDNSResponder mdns;
 
 //ESP8266WiFiMulti WiFiMulti;
 
-
-#if defined(ESP8266)
-  ESP8266WebServer server(80);
-#elif defined(ESP32)
-  WebServer server(80);
+#ifdef ESP32  
+WebServer server(80);
+#else
+ESP8266WebServer server(80);
 #endif
+
 
 WebSocketsServer webSocket = WebSocketsServer(81);
 
@@ -117,31 +117,37 @@ void setup() {
     Serial.println();
     Serial.println("Booting in AP mode");
     Serial.println("Go to 192.168.4.1 to access the oscilloscope");
-    Serial.println("NOTE: OTA is NOT available in AP mode");
+
   } else {
     Serial.println();
     Serial.println("Booting in client mode");
     WiFiManager wifiManager;
     wifiManager.autoConnect(ssid, password);
-    Serial.println();
+    LEDFLASH();
+    delay(500);
+    Serial.println("*****************");
     Serial.print("IP address: ");
-    if (!MDNS.begin("oscilloscope")) {
+    LEDFLASH();
+    WiFi.softAP(ssid, password);  // and keep standard ap on 192.168.4.1
+    delay(500);
+    Serial.println("*****************");
+    if (!MDNS.begin("Oscilloscope")) {
       Serial.println("Error setting up MDNS responder!");
       while (1) {
         delay(1000);
       }
     } else { Serial.println("mDNS responder started");}
-
-
-    WiFi.softAP(ssid, password);  // and keep standard ap on 192.168.4.1
-
-    Serial.print("Connect to http://oscilloscope.local or http://");
+    LEDFLASH();
+    Serial.print("Connect to http://Oscilloscope.local or http://");
     Serial.println(WiFi.localIP());
 
     MDNS.addService("http", "tcp", 80);
     MDNS.addService("ws", "tcp", 81);
   }
   digitalWrite(LED, 1);  //DAG led OFF?
+  
+    ArduinoOTA.setHostname("Oscilloscope");
+    ArduinoOTA.begin();
   
   WebserverSetup();
 
@@ -162,7 +168,7 @@ void setup() {
   if (ScalesConnected() ) {Serial.println(" HX711 connected ");}else{Serial.println("NO SCALES Fitted");}
   ADC1READ = 0;
   Serial.println("Waiting for browser to connect");
-  Serial.print("Connect to http://oscilloscope.local or http://");
+  Serial.print("Connect to http://Oscilloscope.local or http://");
     Serial.println(WiFi.localIP());
   clearADCScopeData1();
   clearADCScopeData2();
@@ -184,7 +190,7 @@ void LEDFLASH(void) {
 void loop() {
   currentTime = millis();
   serialEvent();
- // ArduinoOTA.handle();
+  ArduinoOTA.handle();
   webSocket.loop();
   server.handleClient();
   //Original
@@ -257,15 +263,6 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 }
 
 void WebserverSetup() {
- // ElegantOTA.begin(&server);    // Start ElegantOTA
-  // server.on("/", []() {
-  //   server.send(200, "text/plain", "Hi! I am ESP8266.");
-  // });
-
-  // ElegantOTA.begin(&server);    // Start ElegantOTA  adds /update
-  // server.begin();
-  // Serial.println("HTTP server started");
-  // return;
   server.on("/", handleStrip);
   //server.on("/HOME", handleRoot);
   server.on("/DATA", SendDATA);
@@ -273,6 +270,7 @@ void WebserverSetup() {
   // server.on("/TEST", handleTest);
   server.on("/STRIP", handleStrip);
   server.onNotFound(handleNotFound);
+  // not yet.. server.on("/ota", handleOTA);  / will change to this format later ? 
   OTASettings();   
   server.begin();
   webSocket.begin();
@@ -288,6 +286,9 @@ void handleRoot() {
 // }
 void handleStrip() {
   server.send_P(200, "text/html", STRIP_HTML);
+}
+void handleOTA() {
+ //not ready yet server.send_P(200, "text/html", OTA_HTML);
 }
 
 void SendDATA() {
