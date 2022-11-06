@@ -21,15 +21,15 @@
 static const uint8_t LED = 16;
 #ifdef ESP32  
   #include <WiFi.h>
+  #include <WiFiClient.h>
+  #include <WebServer.h>
  #else
   #include <ESP8266WiFi.h>
-  #include <ESP8266WiFiMulti.h>
-  #include <Hash.h>
+ // #include <ESP8266WiFiMulti.h>
+ // #include <Hash.h>  // used by arduinoota??
   #include <ESP8266WebServer.h>
   #include <ESP8266mDNS.h>
 #endif
-
-
 
 
 #include <WebSocketsServer.h>
@@ -37,7 +37,7 @@ static const uint8_t LED = 16;
 
 #include <WiFiClient.h>
 #include <WiFiUdp.h>
-#include <ArduinoOTA.h>
+
 #include <DNSServer.h>
 #include <WiFiManager.h>  // WIFI Manager by tzapu (tested 2.0.14)
 #include <Wire.h>
@@ -45,6 +45,7 @@ static const uint8_t LED = 16;
 //#include "miniDB.h" // called from scope commands and websocket interprete
 #include "webStripChart.h"
 #include "WebsocketInterpreter.h"
+#include "OTA_Web.h"
 
 byte APMODE_BOOT_PIN = D7;  //DAG  press this pin to ground to start in AP mode..
 byte D_in1 = D7;            //DAG
@@ -81,14 +82,20 @@ boolean ADC1READ;
 String localIPaddr = "";
 // DAG end
 
-const char *ssid = "Oscilloscope";
+const char *ssid = "scope";
 const char *password = "12345678";
 
 MDNSResponder mdns;
 
-ESP8266WiFiMulti WiFiMulti;
+//ESP8266WiFiMulti WiFiMulti;
 
-ESP8266WebServer server(80);
+
+#if defined(ESP8266)
+  ESP8266WebServer server(80);
+#elif defined(ESP32)
+  WebServer server(80);
+#endif
+
 WebSocketsServer webSocket = WebSocketsServer(81);
 
 void BROADCAST(String MSG);
@@ -109,52 +116,33 @@ void setup() {
     WiFi.softAP(ssid, password);
     Serial.println();
     Serial.println("Booting in AP mode");
-    Serial.println("Go to 192.168.4.1 to access the Oscilloscope");
+    Serial.println("Go to 192.168.4.1 to access the scope");
     Serial.println("NOTE: OTA is NOT available in AP mode");
   } else {
     Serial.println();
     Serial.println("Booting in client mode");
-    Serial.println("OTA is available");
     WiFiManager wifiManager;
     wifiManager.autoConnect(ssid, password);
     Serial.println();
     Serial.print("IP address: ");
-    if (!MDNS.begin("Oscilloscope")) {
+    if (!MDNS.begin("scope")) {
       Serial.println("Error setting up MDNS responder!");
       while (1) {
         delay(1000);
       }
-    }
+    } else { Serial.println("mDNS responder started");}
 
-    Serial.println("mDNS responder started");
+
     WiFi.softAP(ssid, password);  // and keep standard ap on 192.168.4.1
 
-    Serial.print("Connect to http://Oscilloscope.local or http://");
+    Serial.print("Connect to http://scope.local or http://");
     Serial.println(WiFi.localIP());
 
     MDNS.addService("http", "tcp", 80);
     MDNS.addService("ws", "tcp", 81);
   }
   digitalWrite(LED, 1);  //DAG led OFF?
-  ArduinoOTA.setHostname("Oscilloscope");
-  ArduinoOTA.onStart([]() {
-    Serial.println("Start");
-  });
-  ArduinoOTA.onEnd([]() {
-    Serial.println("\nEnd");
-  });
-  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-  });
-  ArduinoOTA.onError([](ota_error_t error) {
-    Serial.printf("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-    else if (error == OTA_END_ERROR) Serial.println("End Failed");
-  });
-  ArduinoOTA.begin();
+  
   WebserverSetup();
 
   Wire.begin(_SDA, _SCL);
@@ -194,7 +182,7 @@ void LEDFLASH(void) {
 void loop() {
   currentTime = millis();
   serialEvent();
-  ArduinoOTA.handle();
+ // ArduinoOTA.handle();
   webSocket.loop();
   server.handleClient();
   //Original
@@ -239,7 +227,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
       Serial.printf("[%u] Disconnected!\r\n", num);
       webSocket.close();
       WebserverSetup();
-      Serial.printf("[%u] ATTEMPTING RESTART OF WEBSERVER!\r\n", num);
+      Serial.printf("[%u] ATTEMPTING RESTART OF WEBSERVER!\r\n", num);  // not compatible with  OTA?
       break;
     case WStype_CONNECTED:
       {
@@ -267,6 +255,15 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 }
 
 void WebserverSetup() {
+ // ElegantOTA.begin(&server);    // Start ElegantOTA
+  // server.on("/", []() {
+  //   server.send(200, "text/plain", "Hi! I am ESP8266.");
+  // });
+
+  // ElegantOTA.begin(&server);    // Start ElegantOTA  adds /update
+  // server.begin();
+  // Serial.println("HTTP server started");
+  // return;
   server.on("/", handleStrip);
   //server.on("/HOME", handleRoot);
   server.on("/DATA", SendDATA);
@@ -274,6 +271,7 @@ void WebserverSetup() {
   // server.on("/TEST", handleTest);
   server.on("/STRIP", handleStrip);
   server.onNotFound(handleNotFound);
+  OTASettings();   
   server.begin();
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
@@ -376,4 +374,62 @@ void serialEvent() {
     inputString = "";
     stringComplete = false;
   }
+}
+
+long max_sketch_size() {
+  long ret = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+  return ret;
+}
+
+void OTASettings() {
+    // Upload firmware page
+    server.on("/ota", HTTP_GET, []() {
+    ///StopPorts();  // DAGNALL, note this is NEEDED in NMEA3 here!, not later on! If not stopped, 
+    String html = ""; 
+    //html += FPSTR(Header); 
+    html += "&nbsp;</div></div>";
+   // html += "<br><center>" + String(soft_version) + "</center>";
+    html += FPSTR(OTA_STYLE);
+    html += FPSTR(OTA_START);
+    //html += OTA_START();
+    html += FPSTR(OTA_UPLOAD);
+    server.send_P(200, "text/html", html.c_str());
+  });
+  // Handling uploading firmware file
+    server.on("/ota", HTTP_POST, []() { 
+    //StopPorts();  // leaving here just in case it did something..
+    server.send(200, "text/plain", (Update.hasError()) ? "Update: fail\n" : "Update: OK!\n");
+    delay(500);
+    ESP.restart();
+  }, []() {
+    HTTPUpload& upload = server.upload();
+    if (upload.status == UPLOAD_FILE_START) {
+      Serial.printf("Firmware update initiated: %s\r\n", upload.filename.c_str());  // dagnall should this be serial2 for debugging?-- but the Stop serial that I re-instated stops these being sent!
+      //uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+      uint32_t maxSketchSpace = max_sketch_size();
+      if (!Update.begin(maxSketchSpace)) { //start with max available size
+        Update.printError(Serial);
+      }
+    } else if (upload.status == UPLOAD_FILE_WRITE) {
+      /* flashing firmware to ESP*/
+      if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
+        Update.printError(Serial);
+      }
+      // Store the next milestone to output
+      uint16_t chunk_size  = 51200;
+      static uint32_t next = 51200;
+      // Check if we need to output a milestone (100k 200k 300k)
+      if (upload.totalSize >= next) {
+        Serial.printf("%dk ", next / 1024);    //// dagnall  this be serial2 for debugging?  
+        LEDFLASH();  // can add flashing leds here to show progress on leds.. 
+        next += chunk_size;
+      }
+    } else if (upload.status == UPLOAD_FILE_END) {
+      if (Update.end(true)) { //true to set the size to the current progress
+        Serial.printf("\r\nFirmware update successful: %u bytes\r\nRebooting...\r\n", upload.totalSize);      
+        } else {
+        Update.printError(Serial);
+      }
+    }
+  });
 }

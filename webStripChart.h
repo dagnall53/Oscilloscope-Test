@@ -70,7 +70,9 @@ var dataLogFlag = false;
     var lastI2CDeviceAddress = null;
     var lastI2CControlRegister = null;
 
- 
+ function ELEGANTOTA(){
+
+ }
    
 
 //*********  Data Display ******
@@ -1243,6 +1245,9 @@ function colorArray(len) {
       <div class= "VertSelectBox" > <span  class= "SettingsTitle" >Log Data</span> <button id="toggleDataLogButton" class="VertBoxStyle"  onclick="toggleDataLog()">
         <b>Log Data: Off</b>
       </button> </div>
+      <div class= "VertSelectBox" > <span  class= "SettingsTitle" >OTA</span> <a href="/ota"><button  id="ElegantOTA" class="VertBoxStyle"  onclick="ELEGANTOTA()">
+        <b>OTA</b>
+      </button></a> </div>
 
     </div><!--NOTE: This comment is to prevent white space between inline blocking elements.
   ---><div id="terminalSettingsElement" style="display:none; width:100%; height:77.5vh; overflow-y:auto; text-align:center; ">
