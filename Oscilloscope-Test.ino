@@ -37,7 +37,7 @@ static const uint8_t LED = 16;
 
 #include <WiFiClient.h>
 #include <WiFiUdp.h>
-#include <ArduinoOTA.h>
+//#include <ArduinoOTA.h>
 #include <DNSServer.h>
 #include <WiFiManager.h>  // WIFI Manager by tzapu (tested 2.0.14)
 #include <Wire.h>
@@ -146,8 +146,8 @@ void setup() {
   }
   digitalWrite(LED, 1);  //DAG led OFF?
   
-    ArduinoOTA.setHostname("Oscilloscope");
-    ArduinoOTA.begin();
+   // ArduinoOTA.setHostname("Oscilloscope");
+   // ArduinoOTA.begin();
   
   WebserverSetup();
 
@@ -190,7 +190,8 @@ void LEDFLASH(void) {
 void loop() {
   currentTime = millis();
   serialEvent();
-  ArduinoOTA.handle();
+  MDNS.update(); //was called by ArduinoOTA!!
+ // ArduinoOTA.handle();
   webSocket.loop();
   server.handleClient();
   //Original
