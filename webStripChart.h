@@ -40,15 +40,21 @@ var dataLogFlag = false;
 
  var Scale =[];
      Scale[0] = "1";  // CH 1  
-     Scale[1] = "1";  // CH 2   
+     Scale[1] = "1";  // CH 2
+     Scale[2] = "1";  // CH 3 b  
+     Scale[3] = "1";  // CH 4 b     
+
  var Offset =[];
      Offset[0]= "2";
-     Offset[1]= "2";     
+     Offset[1]= "2";
+      Offset[2]= "1.25";
+      Offset[3]= "0.25";     
 
  var CHSource =[];
      CHSource[0] = "INT ADC";
-     CHSource[1] = "TRIANGLE";     
-     CHSource[3] = "BINARY"; 
+     CHSource[1] = "TRIANGLE";
+     CHSource[2] = "B";     
+     CHSource[3] = "B"; 
 
  var SCALESPresent = false;  
  var I2C_50_ADCPresent = false;
@@ -406,14 +412,21 @@ var dataLogFlag = false;
      
         Data_Length=0; 
 				for(var Count = 3; Count <= (wsMessageArray.length-1); Count++)	{ 
-          demograph.updatePoints( [ parseFloat(Offset[0])+parseFloat(wsMessageArray[Count]), parseFloat(Offset[1])+parseFloat(wsMessageArray[Count+1]) ] );
+          demograph.updatePoints( [ parseFloat(Offset[0])+parseFloat(wsMessageArray[Count]), 
+                                    parseFloat(Offset[1])+parseFloat(wsMessageArray[Count+1]) ,
+                                    parseFloat(Offset[2])+parseFloat("0"),
+                                    parseFloat(Offset[3])+parseFloat("0") ]);
           Count++;
 					Data_Length ++;
         
         }
         // note use 3 and 4 as index to get first sample only
         //console.log ( " parseDuplexData() read: %i", Data_Length);
-        demograph.updateLegends( [ parseFloat(wsMessageArray[3]), parseFloat(wsMessageArray[4]) ]);
+        // dag need dummy value data for legends display for binary at the moment
+        demograph.updateLegends( [ parseFloat(wsMessageArray[3]), 
+                                   parseFloat(wsMessageArray[4]),
+                                   parseFloat("0"),
+                                   parseFloat("0") ]);
         demograph.updateTimestamps();
       }
     }
@@ -555,10 +568,13 @@ var dataLogFlag = false;
     document.getElementById(stringVal).innerHTML=CHSource[i]; 
     //document.getElementById("CH_SourceID[0]").innerHTML=CHSource[0]; 
     //document.getElementById("CH_SourceID[1]").innerHTML=CHSource[1];
+
+    if ( CHSource[i] == "DIG") {demograph.units[i]="B";}
+      demograph.units[2]="b";demograph.units[3]="b";
       demograph.units[i]="V";
       if  ( (CHSource[i] == "SCALES") || (CHSource[i] == "SCALESB") ) {
             demograph.units[i]="Kg";}
-      if ( CHSource[i] == "DIG") {demograph.units[i]="";}
+      if ( CHSource[i] == "DIG") {demograph.units[i]="B";}
      var dataout="";
       dataout = "SCOPE DUPLEX "+(i+1)+"  "; // note two spaces
       dataout += CHSource[i];
@@ -621,14 +637,19 @@ function createValueIDs(labels, canvasID) {
 function createLegendRect(labelDivID, color, label, valueID,  i) {
     const sourceSpan= `<span id="CH_SourceID[`+i+`]">${CHSource[i]}</span>`;       
     const labelSpan = `<span>${label}</span>`
-    const valueSpan = label.at(-1) == ":" ? `<span id="${valueID}"></span>` : ""
-    byID(labelDivID).innerHTML += `
+    const valueSpan = `<span id="${valueID}"></span>` 
+    // used to test for ":" const valueSpan = label.at(-1) == "" ? `<span id="${valueID}"></span>` : ""
+    if (i<=1) {byID(labelDivID).innerHTML += `
         <div style="display: inline-block;">
             <svg width="10" height="10"> <rect width="10" height="10" style="fill: ${color}"/>
                </svg> 
             ${labelSpan}<small>(${sourceSpan})</small>:${valueSpan}  
-         div>
-    `
+            `}else{byID(labelDivID).innerHTML += `
+        <div style="display: inline-block;">
+            <svg width="10" height="10"> <rect width="10" height="10" style="fill: ${color}"/>
+               </svg> 
+            ${labelSpan}:${valueSpan}  
+            `}
 }
 
 function createGraph(
@@ -662,8 +683,8 @@ function createGraph(
         autoScaleMode
     )
     createDataRect();
-    for (let i = 0; i < labels.length; i++) {
-           createLegendRect(labelDivID, graph.colors[i], labels[i] + ":", valueIDs[i], i)
+    for (let i = 0; i < labels.length; i++) {        // used to add ":" then remove later !
+           createLegendRect(labelDivID, graph.colors[i], labels[i] , valueIDs[i], i)
       }
     return graph
 }
@@ -761,8 +782,11 @@ class Graph {
     }
 
     updateLegends(values) {
-        for (let i = 0; i < this.noLabels; i++)
-             byID(this.valueIDs[i]).innerHTML = values[i].toFixed(2) + " " + this.units[i];
+              for (let i = 0; i < this.noLabels; i++) {
+                if (i<=1){
+                byID(this.valueIDs[i]).innerHTML = values[i].toFixed(2) + this.units[i];}
+                else{byID(this.valueIDs[i]).innerHTML = values[i].toFixed(0) + " ";}
+             }
     }
 
     updateTimestamps() {
@@ -1293,8 +1317,8 @@ function colorArray(len) {
     <script>
         /* Create graph using picograph   */
         let demograph = createGraph("graphDemo",
-            ["CH1", "CH2"],
-            ["V",""], "graphLabels",3  );
+            ["CH1", "CH2","D1","D2"],
+            ["V","","",""], "graphLabels",3  );
 
         // * Run this at very xxxx ms to run demograph update*/
        //setInterval(updateEverySecond,1000); 

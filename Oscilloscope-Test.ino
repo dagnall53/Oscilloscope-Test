@@ -131,7 +131,7 @@ void setup() {
     WiFi.softAP(ssid, password);  // and keep standard ap on 192.168.4.1
     delay(500);
     Serial.println("*****************");
-    if (!MDNS.begin("Oscilloscope")) {
+    if (!MDNS.begin("scope")) {
       Serial.println("Error setting up MDNS responder!");
       while (1) {
         delay(1000);
