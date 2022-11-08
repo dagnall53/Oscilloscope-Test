@@ -1,5 +1,5 @@
 // https://www.cssscript.com/line-chart-picograph/
-// 
+//
 
 
 
@@ -41,14 +41,14 @@ var dataLogFlag = false;
  var Scale =[];
      Scale[0] = "1";  // CH 1  
      Scale[1] = "1";  // CH 2
-     Scale[2] = "1";  // CH 3 b  
-     Scale[3] = "1";  // CH 4 b     
+     Scale[2] = "0.25";  // CH 3 b  
+     Scale[3] = "0.25";  // CH 4 b     
 
  var Offset =[];
      Offset[0]= "2";
      Offset[1]= "2";
-      Offset[2]= "1.25";
-      Offset[3]= "0.25";     
+      Offset[2]= "0.25";
+      Offset[3]= "1.25";     
 
  var CHSource =[];
      CHSource[0] = "INT ADC";
@@ -76,7 +76,7 @@ var dataLogFlag = false;
     var lastI2CDeviceAddress = null;
     var lastI2CControlRegister = null;
 
- function ELEGANTOTA(){
+ function MyOTA(){
 
  }
    
@@ -396,7 +396,16 @@ var dataLogFlag = false;
   if(wsMessageArray[3] === "1"){I2C_60_ADCPresent = true;}
   DisableNonPresentOptions();
  }
-
+ function parseBinary( input, bit ){
+  temp =1;
+  if (bit==0){ if (input == (input & 0x01) ) {temp=0;}  }
+  if (bit==1){ if (input == (input & 0x02) ) {temp=0;}  }
+  if (bit==2){ if (input == (input & 0x04) ) {temp=0;}  }
+  if (bit==3){ if (input == (input & 0x08) ) {temp=0;}  }
+  if (bit==4){ if (input == (input & 0x10) ) {temp=0;}  }
+  //console.log(" binary parse %s   of bit <%s>  is %s   ", input, bit,temp  );
+  return temp; 
+ }
 
 
  function parseDuplexData() {
@@ -405,29 +414,31 @@ var dataLogFlag = false;
 //  console.log(wsMessageArray[2]);
 //  console.log(wsMessageArray[3]);
 //  console.log("... ParseDuplex %i ", wsMessageArray.length);
-  websock.send("CTS  0"); 
+ // 
  if(wsMessageArray[1] === "ADC") {
     if(wsMessageArray[2] === "DUPLEX") {  
       if(wsMessageArray.length > 3) { 
-     
+        //websock.send("HasBeenSent  0"); 
         Data_Length=0; 
 				for(var Count = 3; Count <= (wsMessageArray.length-1); Count++)	{ 
+
           demograph.updatePoints( [ parseFloat(Offset[0])+parseFloat(wsMessageArray[Count]), 
                                     parseFloat(Offset[1])+parseFloat(wsMessageArray[Count+1]) ,
-                                    parseFloat(Offset[2])+parseFloat("0"),
-                                    parseFloat(Offset[3])+parseFloat("0") ]);
-          Count++;
+                                    parseFloat(Offset[2])+ parseFloat(Scale[2])*parseBinary(wsMessageArray[Count+2] , 0), // digital data 
+                                    parseFloat(Offset[3])+ parseFloat(Scale[3])*parseBinary(wsMessageArray[Count+2] , 1) ]);
+          Count++;Count++;
 					Data_Length ++;
         
         }
         // note use 3 and 4 as index to get first sample only
-        //console.log ( " parseDuplexData() read: %i", Data_Length);
-        // dag need dummy value data for legends display for binary at the moment
+        console.log ( " parseDuplexData() read: %i", Data_Length);
+        // NEED value data for legends display Just take FIRST reading.. 
         demograph.updateLegends( [ parseFloat(wsMessageArray[3]), 
                                    parseFloat(wsMessageArray[4]),
-                                   parseFloat("0"),
-                                   parseFloat("0") ]);
+                                   parseBinary(wsMessageArray[5] , 0),
+                                   parseBinary(wsMessageArray[5] , 1) ]);
         demograph.updateTimestamps();
+        websock.send("Data_accepted "); // Clears up flags
       }
     }
   UpdateDisplay();
@@ -450,7 +461,7 @@ var dataLogFlag = false;
   demograph.drawHorizontalLines()
   if (demograph.timestamps) {demograph.drawTimestamps()}
   demograph.drawGraph()
-  websock.send("CTS  1"); 
+  //websock.send("HasBeenSent  1"); 
  }
 
  function selectStripChart()
@@ -462,16 +473,16 @@ var dataLogFlag = false;
     }
 
  function ClearStripChart(){
-       websock.send("Data_accepted "); // Clears up flags
-        websock.send("CTS  1");   // should initiate first websock send.. 
+       websock.send("Data_accepted "); // Clears up flags, should initiate first websock send.. 
+        //websock.send("HasBeenSent  1");   // should initiate first websock send.. 
         websock.send("PicoGraph setup Finished "); 
  }   
 
  function InitialSetStripChart() {
         websock.send("SCOPE DUPLEX 2  TRIANGLE");    // set ch2 = TRIANGLE  // note double space after 1 or 2 
         websock.send("SCOPE DUPLEX 1  INT ADC"); // set duplex and ch 1 = INT 
-        SampleRateUpdate(10000); // 10ms in us
-        websock.send("SCOPE WS_Timer 200");
+        SampleRateUpdate(250); // 250us fast option 10ms in us
+        //websock.send("SCOPE WS_Timer 200");
         ClearStripChart();
         DisableNonPresentOptions(); // test with all disabled in setup
         websock.send("REQUEST HW LIST");
@@ -499,7 +510,7 @@ var dataLogFlag = false;
    // this is not needed now, but maybe in future:
          
       document.getElementById('Scales_ID').removeAttribute('disabled');
-      document.getElementById('Scales_ID1').removeAttribute('disabled'); 
+     
       document.getElementById('Scales_ID2').removeAttribute('disabled');  
       document.getElementById("ADC_ID").removeAttribute('disabled');       
       document.getElementById("ADC_ID2").removeAttribute('disabled');  
@@ -509,7 +520,7 @@ var dataLogFlag = false;
     
     if (!SCALESPresent){
       document.getElementById('Scales_ID').setAttribute('disabled', '');
-      document.getElementById('Scales_ID1').setAttribute('disabled', ''); 
+      
       document.getElementById('Scales_ID2').setAttribute('disabled', '');  
       } 
 
@@ -536,6 +547,7 @@ var dataLogFlag = false;
         data2send = "SCOPE Sample_uS ";
         data2send += ( INPUT );  // send in us  CHANGE LATER to actual us 
        websock.send(data2send);
+       document.getElementById("xScaleSampleRateElement").value= INPUT;  
        xPlotSampleRateHz = 1000000/INPUT;
        if (xPlotSampleRateHz >= 1000) {document.getElementById("SPS_HZSourceID").innerHTML=xPlotSampleRateHz/1000 +"kHz"; }
                                      else { document.getElementById("SPS_HZSourceID").innerHTML=xPlotSampleRateHz +"Hz";}
@@ -549,11 +561,14 @@ var dataLogFlag = false;
    }    
 
 
- function checkforSPSTiming( element){
-  //console.log(" SPScheck "); console.log(element);
-  if ( ( (element = "SCALES") || (element = "SCALESB") ) && (xPlotSampleRate <= 20000) ) {        
-         document.getElementById("xScaleSampleRateElement").value=20000;  // change the select box 
-         xPlotSampleRate = 20000;
+ function checkforSPSTiming( element , element1 ){
+  //console.log(" SPScheck %s  currentxplot %s", element, document.getElementById("xScaleSampleRateElement").value);
+  
+  if ( ( (element == "SCALES") || (element == "SCALESB") || (element1 == "SCALES") || (element1 == "SCALESB") ) 
+     && (document.getElementById("xScaleSampleRateElement").value <= 100000) ) {   // scales take circa 75ms to read      
+        if ((element == "SCALES")&&(element1 == "SCALESB")){ xPlotSampleRate = 200000;}
+         else{  xPlotSampleRate = 100000;}
+       //   document.getElementById("xScaleSampleRateElement").value= xPlotSampleRate;     
          SampleRateUpdate(xPlotSampleRate);
          console.log("FORCING slower SPS %d ms for HX 711",xPlotSampleRate);
        }
@@ -579,7 +594,7 @@ var dataLogFlag = false;
       dataout = "SCOPE DUPLEX "+(i+1)+"  "; // note two spaces
       dataout += CHSource[i];
       websock.send(dataout);
-      checkforSPSTiming(CHSource[i]);
+      checkforSPSTiming(CHSource[0],CHSource[1]);
       }
 
 
@@ -638,7 +653,7 @@ function createLegendRect(labelDivID, color, label, valueID,  i) {
     const sourceSpan= `<span id="CH_SourceID[`+i+`]">${CHSource[i]}</span>`;       
     const labelSpan = `<span>${label}</span>`
     const valueSpan = `<span id="${valueID}"></span>` 
-    // used to test for ":" const valueSpan = label.at(-1) == "" ? `<span id="${valueID}"></span>` : ""
+   
     if (i<=1) {byID(labelDivID).innerHTML += `
         <div style="display: inline-block;">
             <svg width="10" height="10"> <rect width="10" height="10" style="fill: ${color}"/>
@@ -711,7 +726,8 @@ class Graph {
         this.setWidthHeightAndCssScale()
         this.cssScale = window.devicePixelRatio
         this.intervalSize = intervalSize * this.cssScale
-        this.nPointsFloat = this.width / this.intervalSize
+        this.nPointsFloat = this.width / this.intervalSize 
+        if (this.nPointsFloat >= 350){this.nPointsFloat=349;}  // limit number of points across screen 
         this.nPoints = Math.round(this.nPointsFloat) + 1        
         this.points = emptyArray2D(noLabels, this.nPoints)
         this.maxVal = maxVal
@@ -1115,9 +1131,10 @@ function colorArray(len) {
                } 
              Data_Length = 0;
              Data_Updated = false;
-             websock.send("CTS  1"); 
+            // websock.send("HasBeenSent  1"); 
             } else 
-            {console.log (" No Data ");websock.send("CTS  1 ");} 
+            {console.log (" No Data ");//websock.send("HasBeenSent  1 ");
+            } 
         } 
          
       }
@@ -1248,31 +1265,31 @@ function colorArray(len) {
            <option value="OFF">Off</option>
            <option id="Scales_ID" value="SCALES">HX711 Scales Ch_A</option> 
            <option value="INT ADC"selected="selected">Internal ADC (A0)</option> 
-           <option value="DIG">Digital Inputs</option>
            <option id="ADC_ID" value="4V ADC" >4V ADC</option>
            <option id="ADC_ID1" value="64V ADC">64V ADC</option>
-           <option value="TRIANGLE">-5+5Triangle test</option>
+           <option value="TRIANGLE">-1+1Triangle test</option>
            
         </select> </div>
       <div class= "VertSelectBox" > <span class= "SettingsTitle" >Channel 2</span> <select id="channelSelectElement2" class="VertBoxStyle" onchange="changeChannelSelect( id , 1);" >
           <option value="OFF">Off</option>
-          <option id="Scales_ID1" value="SCALES">HX711 Scales Ch_A</option> 
           <option id="Scales_ID2" value="SCALESB">HX711 Scales Ch_B</option> 
           <option value="INT ADC">Internal ADC (A0)</option>
-          <option value="DIG" >Digital Inputs/option>
           <option id="ADC_ID2" value="4V ADC">4V ADC</option>
           <option id="ADC_ID3" value="64V ADC">64V ADC</option>
           <option value="TRIANGLE" selected="selected">-1+1Triangle test</option>
         </select> </div>
       <div class= "VertSelectBox" > <span class= "SettingsTitle" >Sample Rate</span> <select id="xScaleSampleRateElement" class="VertBoxStyle" onchange="changeSampleRate();" >
+          <option value="100" > 100us </option>
+          <option value="250" selected="selected"  > 250us </option>
           <option value="500" > 0.5ms</option>
           <option value="1000" >1ms</option>
           <option value="2000" >2ms </option>
           <option value="5000" >5ms </option>
-          <option value="10000" selected="selected" >10ms</option>
+          <option value="10000"  >10ms</option>
           <option value="20000">20ms</option>
           <option value="100000">100ms</option>
           <option value="1000000" >1sec</option>
+          <option value="2000000" >2sec</option>
           <option value="10000000">10sec</option>
           <option value="100000000">100sec</option>
           
@@ -1290,7 +1307,7 @@ function colorArray(len) {
       <div class= "VertSelectBox" > <span  class= "SettingsTitle" >Log Data</span> <button id="toggleDataLogButton" class="VertBoxStyle"  onclick="toggleDataLog()">
         <b>Log Data: Off</b>
       </button> </div>
-      <div class= "VertSelectBox" > <span  class= "SettingsTitle" >OTA</span> <a href="/ota"><button  id="ElegantOTA" class="VertBoxStyle"  onclick="ELEGANTOTA()">
+      <div class= "VertSelectBox" > <span  class= "SettingsTitle" >OTA</span> <a href="/ota"><button  id="MyOTA" class="VertBoxStyle"  onclick="MyOTA()">
         <b>OTA</b>
       </button></a> </div>
 

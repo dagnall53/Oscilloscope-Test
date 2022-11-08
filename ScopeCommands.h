@@ -26,8 +26,8 @@
 int ScreenUpdate(int A) ;
 int Screen_U_time();
 
-bool Read_CTS (void);
-void Set_CTS (bool set);
+bool HasBeenSent(void);
+void SetHBS(bool set);
 
 
 bool Data_RTS (void);
@@ -44,8 +44,9 @@ String scopeHandler(WebSocketsServer &WEBSOCKETOBJECT);
 void ADCInit(void);
 void setADCChannel(int CHANNEL);
 int ADCRead(void);
-
+void fastADChandler(void);
 void ADCHandler(void);
+float DigitalPortRead(void);
 float ChannelRead1 (void);
 float ChannelRead2 (void);
 void SendHW_LIST(WebSocketsServer& WEBSOCKETOBJECT);

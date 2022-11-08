@@ -22,13 +22,17 @@ void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKE
  if(WEBSOCKETDATA.startsWith("Data_accepted"))
   { 
     Serial.println("WebBrowser Data Accepted ");
-    Set_Data_RTS (false); 
-    //Set_CTS(false);
+    SetHBS(true);
+    ResetNumberofSamplesread();
+    Set_Data_RTS(false); //SetHBS(false); 
+    _SetHasBeenAccepted(true); // should trigger new samples.    
+    _printStatus("DataAccepted");
   }
 
- if (WEBSOCKETDATA.startsWith("CTS")){
-       topLevelToken = "CTS ";
-   Set_CTS(WEBSOCKETDATA.substring(topLevelToken.length()).toInt());
+ if (WEBSOCKETDATA.startsWith("HasBeenSent")){
+       topLevelToken = "HasBeenSent ";
+    Serial.println("WebBrowser HBS ");   
+   SetHBS(WEBSOCKETDATA.substring(topLevelToken.length()).toInt());
 
  }
 if(WEBSOCKETDATA.startsWith("SERIAL_BAUD"))

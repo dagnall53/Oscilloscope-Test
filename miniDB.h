@@ -1,5 +1,19 @@
 #include <Arduino.h>
 
+
+void _printStatus(char* location);
+// timing for tests
+void _StartTestTimers();
+
+void _Mark_Time(int input);
+
+long _PrintTime( int input);
+void _printalltimes();  // prints out all marked times
+
+bool HasBeenAccepted(void);
+
+void _SetHasBeenAccepted( bool set);
+
 // Terminal 
 void SetBaud (int input);
  int BaudRate();
@@ -33,6 +47,9 @@ String getUartScopeData(void);
 void clearUartScopeData(void);
 
 //ADC SCOPE DATA
+void BuildScopeDataString(String DATA1, String DATA2,String DATA3);
+
+
 void addADCScopeData(String ADCSCOPEDATA);
 String getADCScopeData(void);
 void setLastADCScopeData(String LASTADCSCOPEDATA);

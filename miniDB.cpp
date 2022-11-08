@@ -1,5 +1,5 @@
 #include "miniDB.h"
-
+#include "ScopeCommands.h"
 int WS_Timer,sampleuSTimer;
 bool dataLogFlag;
 bool dataTAREFlag;
@@ -7,13 +7,56 @@ bool uartScopeFlag;
 bool DuplexModeFlag;
 bool _scopePause;
 bool _OTA_ACTIVE;
+bool _data_sending;
 String uartScopeData;
 String adcScopeData1;
 String adcScopeData2;
-String channelMode1;
+String channelMode1;  
 String channelMode2;
 int _baudRate;
-int _MAX_Samples = 320;   // for duplex testing testd to 1000 not found limit. should be set to number across the screen! . 
+int _MAX_Samples = 400;   //  testd to 300 (faults at 400?) with fast 1 ch 8266 mode..  1000 not found limit in slow modes. should be set to number across the screen! . 
+
+long _MyTempTime,_MyTimer[]={0,0,0,0,0};
+long _TTemp,           _T[]={0,0,0,0,0};
+
+// test functions
+void _printStatus(char* location){
+  Serial.printf(" at<%s>   RTS<%i>   Sent?<%i>  Accepted?<%i>   ",location, Data_RTS(), HasBeenSent() , HasBeenAccepted() );
+  Serial.println();
+}
+
+
+
+void _StartTestTimers(){
+  _MyTempTime = micros();
+  
+  for (int i=0 ;i<=4 ;i++){
+    _MyTimer[i] = micros();
+  }
+ }
+
+void _Mark_Time(int input){
+  _T[input]= micros()-_MyTimer[input];
+}
+
+long _PrintTime( int input){
+  return _T[input];
+}
+
+void _printalltimes(){
+ Serial.printf(" Marked Times (0):%i   (1)%i    (2)%i   (3)%i  (4)%i us",_PrintTime(0),_PrintTime(1),_PrintTime(2),_PrintTime(3),_PrintTime(4)); 
+}
+
+
+bool HasBeenAccepted(void){
+  return _data_sending;
+  }
+
+void _SetHasBeenAccepted( bool set){
+   if (set) {Serial.println( "HBAcc ON ");}else{Serial.println ( "HBAcc OFF ");}//Serial.println(" set HBA %s", set) 
+  _data_sending=set; 
+}
+
 
 int MAX_Samples(){
   return _MAX_Samples;
@@ -21,7 +64,7 @@ int MAX_Samples(){
 
 void SetNSamples(int samples){
   _MAX_Samples = samples;
-  Serial.print("Updating N samples for fast sampling to:");Serial.println(_MAX_Samples);
+ Serial.print("Updating N samples for fast sampling to:");Serial.println(samples);
 }
 
 
@@ -144,6 +187,9 @@ void setPAUSE(bool Pause){
   Serial.print(" Setting Pause to:");
   Serial.print(Pause);
   _scopePause = Pause;
+  _printStatus(" Setting_Pause ");
+  if(!Pause){ Set_Data_RTS(false); SetHBS(false); _SetHasBeenAccepted(true); // should trigger new samples. 
+  }
 }
 bool PAUSE(){
   return _scopePause;
@@ -153,6 +199,12 @@ bool PAUSE(){
 /////////////////
 //ADC SCOPE DATA
 /////////////////
+void BuildScopeDataString(String DATA1, String DATA2,String DATA3){
+  adcScopeData1 = adcScopeData1 + " "+DATA1+" "+DATA2+" "+ DATA3;
+}
+
+
+
 void addADCScopeData1(String ADCSCOPEDATA)
 {
   adcScopeData1 += " ";

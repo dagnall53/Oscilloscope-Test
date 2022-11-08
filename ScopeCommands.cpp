@@ -2,7 +2,8 @@
 #include <HX711.h>
 
 HX711 scale;
-
+const int _BufferSize = 512;
+ int buffer[3][_BufferSize];  // limits at about 350 on the sends but try to have bigger for trigger capture
 
 boolean ScalesPresent;
 String channelModeOutput1;
@@ -20,13 +21,12 @@ long TAREA = 0;
 long TAREB = 0;
 byte LastChanRead = 0;
 
-//int MAX_Samples = 320;   // for duplex testing testd to 1000 not found limit. should be set to number across the screen! . 
 
 int NumberofSamplesRead = 0;
 float TestTriangle = 0;
 float TestTriangle1 =0;
 bool _RTS ;
-bool _CTS;
+bool _HasBeenSent;
 
 byte ScopeDigInput0, ScopeDigInput1;
 int Screen_update_time;
@@ -37,13 +37,14 @@ int Screen_U_time() {
   return Screen_update_time;
 }
 
-bool Read_CTS (void){
-  return _CTS;
+bool HasBeenSent(void){
+  
+  return _HasBeenSent;
 }
-void Set_CTS (bool set) {
- //if (set) {Serial.println( "CTS ON ");}else{Serial.println ( "CTS OFF ");}
- if (set) {Serial.print( "<");}
- _CTS = set;
+void SetHBS(bool set) {
+ if (set) {Serial.println( "SetHBS ON ");}else{Serial.println ( "SetHBS OFF ");}//Serial.println(" set HBS %s", set) 
+ if ((set)) {Serial.print( "<");}
+ _HasBeenSent = set;
 }
 
 
@@ -127,6 +128,7 @@ void ScalesInit(byte Data, byte Clock) {
 void SetScalesConnected(boolean set) {
   ScalesPresent = set;
 }
+
 long readScales(byte Chan) {
   long Reading;
   int average = 1;
@@ -134,21 +136,23 @@ long readScales(byte Chan) {
   if (ScalesConnected()) {
     if (Chan == 0) {  //CH A
 
-      if (Chan != LastChanRead) {
+      if (Chan != LastChanRead) { Serial.print("Setgain 0");
         scale.set_gain(128);
-        Reading = scale.read();
-      }  //dummy to get ready because this needs setting up
+        Reading = scale.read();//dummy to get ready because this needs setting up
+      }  
       //CH1scaleset);  this value is obtained by calibrating the scale with known weights; see the README for details
       LastChanRead = Chan;
+      //Reading = (((scale.read() - TAREA) / CH1scaleset));
       Reading = (((scale.read_average(average) - TAREA) / CH1scaleset));
     }
     if (Chan == 1) {  // CH B
-      if (Chan != LastChanRead) {
+      if (Chan != LastChanRead) { Serial.print("Setgain 1");
         scale.set_gain(32);
-        Reading = scale.read();
-      }  //dummy to get ready
+        Reading = scale.read();//dummy to get ready
+      }  
          //CH2scaleset);  This value is obtained by calibrating the scale with known weights; see the README for details
       LastChanRead = Chan;
+      //Reading = (((scale.read() - TAREB) / CH2scaleset));
       Reading = (((scale.read_average(average) - TAREB) / CH2scaleset));
     }
   }
@@ -169,21 +173,15 @@ void scopeInit(void) {
 }
 
 String scopeHandler(WebSocketsServer& WEBSOCKETOBJECT) {
-  //   Serial.print("ADCdata1");
-  // Serial.println(getADCScopeData1());
-  // Serial.print("    ADCdata2");
-  //Serial.println(getADCScopeData2());
-  //Serial.print("scopehandler getchannelmode1[");Serial.print(getChanneMode1());Serial.println("]");
   String _output_summary = "";
 // only doing "duplex mode" now.. 
         //Serial.print("duplex send");
         channelModeOutput1 = "SCOPE ADC DUPLEX";
         channelModeOutput1 += String(getADCScopeData1());  // getADCScopeData1 has special DUPLEX mode that captures BOTH channels 
         WEBSOCKETOBJECT.broadcastTXT(channelModeOutput1);
-        _output_summary += " [" + channelModeOutput1 + "]";
+       // _output_summary += " [" + channelModeOutput1 + "]";
         clearADCScopeData1();
-        clearADCScopeData2();        
-        return _output_summary;
+        return " ";
 }     
         
   
@@ -234,50 +232,106 @@ int ADCRead(void) {
     return ADCResult;
   }
 }
-void ADCHandler(void) {  // DUPLEX MODE ONLY reads BOTH channels and builds up the strings to send data in bulk
-  float temp1,temp2;
-  //if (getDuplexMode() && !Data_RTS() ) {  // Build up while RTS is false..
-   if ( !Data_RTS() ) {  // Build up message for websock while RTS is false..
-    temp1=ChannelRead1();temp2=ChannelRead2();
-    addADCScopeData1(String(temp1, 3));  addADCScopeData1(String(temp2, 3));  // 3 dp
-    NumberofSamplesRead++;  
-    if (every(NumberofSamplesRead,50) )  {Serial.print("-");} 
-    //if (every(NumberofSamplesRead,50) )  {Serial.print(Data_RTS());Serial.println("-");}
-    if (NumberofSamplesRead >= MAX_Samples()) {Set_Data_RTS(true);   Serial.println(">");       }// limit number of samples to the screen width 
-    if (getsampleuSTimer() >= 5000) {Set_Data_RTS(true);Serial.println(">"); } // ?? Allow faster update rate for slow samples per second
-  } 
-  if ((getDataLog()) && (getsampleuSTimer() >= 5000)) {   
+
+void fastADChandler(void){
+  float scale0= 1024/3.3, scale1= 1024/3.3; 
+  float scaleb=1.0; int   temp=0;
+  long _lastsampletime = micros();
+  String Mode1,Mode2;
+  Mode1=getChanneMode1();
+  Mode2=getChanneMode2();
+  bool ADC1ON,ADC2ON,TRION1,TRION2;
+  ADC1ON= (Mode1 == "INT ADC");
+  ADC2ON= (Mode2 == "INT ADC");
+  TRION1 = (Mode1 == "TRIANGLE");
+  TRION2 = (Mode2 == "TRIANGLE");
+   // checks for !Data_RTS before being called
+   // Build up (FULL!) message for websock while RTS is false..
+  while(NumberofSamplesRead <= MAX_Samples()) {  // max number of samples and as fast as possible? 
+    while ( micros() <= getsampleuSTimer() +_lastsampletime ){ yield;  } //  pause to synch with sample rate
+    _lastsampletime=micros();
+    temp=0;buffer[0][NumberofSamplesRead]=0; buffer[1][NumberofSamplesRead]=0;buffer[2][NumberofSamplesRead]=0;
+    TestTriangle1 = TestTriangle1+0.5;
+    if ( TestTriangle1 >=330){TestTriangle1 =-330;}  // to fake +1-1 without changing scale facto
+      
+     if (ADC1ON) {buffer[0][NumberofSamplesRead]=analogRead(0);}
+     if (ADC2ON) {
+       if (ADC1ON) {buffer[1][NumberofSamplesRead]=buffer[0][NumberofSamplesRead];}
+               else{buffer[1][NumberofSamplesRead]=analogRead(0);}
+               }
+     if (TRION1) {buffer[0][NumberofSamplesRead]=TestTriangle1;}
+     if (TRION2) {buffer[1][NumberofSamplesRead]=TestTriangle1;}
+        if (digitalRead(ScopeDigInput0) == 1) {
+          temp = temp + 1;  // offset!
+          }
+        if (digitalRead(ScopeDigInput1) == 1) {
+          temp = temp + 2;  // offset!
+        } 
+      buffer[2][NumberofSamplesRead]=temp;
+      NumberofSamplesRead++;
+      if (NumberofSamplesRead >= MAX_Samples()) {
+        Set_Data_RTS(true); // stop doing it!
+        // all read, so scale and send to the scopestring
+          for (int sample=0;sample < NumberofSamplesRead;sample++){
+               BuildScopeDataString(String((buffer[0][sample])/scale0, 3),String((buffer[1][sample])/scale1, 3),String((buffer[2][sample])/scaleb, 1 ));
+            }
+            
+        Serial.print(" r");Serial.print(NumberofSamplesRead) ;  Serial.println(">");     
+       
+        }// limited to  number of samples to the screen width 
+    } //while
+      // NOW add datalog (first sample only) for fast samples?
+     if ( getDataLog() ) {   // ?? Allow 
      sendTime = millis();
       Serial.println("");
       Serial.print("DL Time:");
       Serial.print(sendTime / 1000);
       Serial.print('.');
       Serial.print(sendTime % 1000); // debugging follows ...
-      Serial.print("  #");Serial.print(NumberofSamplesRead);Serial.print(" RTS(");Serial.print(Data_RTS());Serial.print(") ");
-      Serial.print(" Duplex(");Serial.print(getDuplexMode());Serial.print(") ");
-      if (getChanneMode1() != "OFF") {
-        if (getChanneMode1() != "SCALES") {
-          Serial.print(" CHANNEL1 V : ");
-        } else {
-          Serial.print(" CHANNEL1 Kg: ");
-        }
-        Serial.print(temp1);      // SENDING "Truth in floating point"
+      Serial.printf("CH1:  %.3f  CH2: %.3f  Dig %id  ",String((buffer[0][0])/scale0, 3),String((buffer[1][0])/scaleb, 3),String((buffer[2][0])/scaleb, 1 ));
       }
-      if (getChanneMode2() != "OFF") {
-        if ((getChanneMode2() == "SCALESB") || (getChanneMode2() == "SCALES")) {
-          Serial.print("   CHANNEL2 Kg: ");
-        } else {
-          Serial.print("   CHANNEL2 V: ");
-        }
-        Serial.print(temp2);      // SENDING "Truth in floating point"
-      }
-     }
+       //
+  
+
+  }//function
+  
+
+
+
+
+void ADCHandler(void) {  // NOW DUPLEX CH1/CH2 +digital third channel  ONLY reads BOTH channels and digitals and builds up the strings to send data in bulk
+  float temp1,temp2;
+  float _digital;
+   if ( !Data_RTS() ) {  // Build up message for websock while RTS is false..
+   
+    temp1=ChannelRead1();temp2=ChannelRead2(); _digital= DigitalPortRead();
+    
+    BuildScopeDataString(String(temp1, 3),String(temp2, 3),String(_digital, 1 ));
+   
+    NumberofSamplesRead++;  
+    if (every(NumberofSamplesRead,50) )  {Serial.print("-");} 
+    //if (every(NumberofSamplesRead,50) )  {Serial.print(Data_RTS());Serial.println("-");}
+    if (NumberofSamplesRead >= MAX_Samples()) {Set_Data_RTS(true);  Serial.println(">");       }// limit number of samples to the screen width 
+    if (getsampleuSTimer() >= 5000) {Set_Data_RTS(true); 
+       if (!getDataLog()){Serial.println(">"); }   // gives tidy <> in serial print (< is HasBeenSent )
+    }
+   } 
+  if ((getDataLog()) && (getsampleuSTimer() >= 5000)) {   // ?? Allow faster update rate for slow samples per second
+     sendTime = millis();
+      Serial.println("");
+      Serial.print("DL Time:");
+      Serial.print(sendTime / 1000);
+      Serial.print('.');
+      Serial.print(sendTime % 1000); // debugging follows ...
+      int _DIG = _digital; //integer it 
+      Serial.printf("CH1:  %.3f  CH2: %.3f  Dig %id  ", temp1,temp2, _DIG );
+   }
   
  }
 
 
 float ChannelRead1(void) {
-  float temp;
+  float temp =0;
   String Mode;
   Mode=getChanneMode1();
   //Serial.println(Mode);
@@ -292,19 +346,17 @@ float ChannelRead1(void) {
     CH1Scale = 1;
   }
   if (Mode == "INT ADC") {
-    CH1Scale = 1024 / 3.3;  //3.3v ref, output in mv1024 not 2048
-    temp = (float(analogRead(0)) / CH1Scale); // force float?
-  }
+   CH1Scale = 1024 / 3.3;  //3.3v ref, output in mv1024 not 2048
+   temp = (float(analogRead(0)) / CH1Scale); // force float?
+   }
 
   if (Mode == "SCALES") {
     CH1Scale = -100000 ;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ same AS 5 V! 
-    temp = readScales(0);
-    temp = (temp  / CH1Scale);
+    temp = (readScales(0)/ CH1Scale);;
   }
   if (Mode == "SCALESB") {
     CH1Scale = -25000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V!
-    temp = readScales(1);
-    temp = ((temp ) / CH1Scale);
+    temp = (readScales(1)/ CH1Scale);
   }
   if (Mode == "4V ADC") {
     CH1Scale = 2048 / 4;
@@ -313,18 +365,27 @@ float ChannelRead1(void) {
   }
   
   if (Mode == "TRIANGLE"){ 
-    //Serial.println("mode is triangle");
-    
-    TestTriangle1 = TestTriangle1+0.1;
-    if ( TestTriangle1 >=5){TestTriangle1 =-5;}
+    TestTriangle1 = TestTriangle1+0.01;
+    if ( TestTriangle1 >=1){TestTriangle1 =-1;}
     temp = TestTriangle1 ;
     }
  //Serial.print("CH1 out:"); Serial.println(temp);  
   return temp;
 }
 
+float DigitalPortRead(void){
+   float temp=0;
+    if (digitalRead(ScopeDigInput0) == 1) {
+      temp = temp + 1;  
+      }
+    if (digitalRead(ScopeDigInput1) == 1) {
+      temp = temp + 2;  
+    } 
+    return temp;
+}
+
 float ChannelRead2(void) {
-  float temp;
+  float temp =0;
   String Mode;
   Mode = getChanneMode2();
   if (Mode == "DIG") {
@@ -335,40 +396,32 @@ float ChannelRead2(void) {
     if (digitalRead(ScopeDigInput1) == 1) {
       temp = temp + 2;  // offset!
     } 
-    CH1Scale = 1;
+    CH2Scale = 1;
   }
   if (Mode == "INT ADC") {
     CH2Scale = 1024 / 3.3;  //3.3v ref, output in V
-    temp = (analogRead(0)) / CH1Scale;
+    temp = (analogRead(0)) / CH2Scale;
   }
 
   if (Mode == "SCALES") {
-    CH1Scale = -100000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V! 209 and 1000 2090 and 100 20900 and 10 here
-    temp = readScales(0);
-    temp = ((temp ) / CH1Scale) ;
-  }
+    CH2Scale = -100000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V! 209 and 1000 2090 and 100 20900 and 10 here
+    temp = (readScales(0)/ CH2Scale) ;
+    }
   if (Mode == "SCALESB") {
-    CH1Scale = -25000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V!
-    temp = readScales(1);
-    temp = ((temp ) / CH1Scale);
+    CH2Scale = -25000;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ AS 5 V!
+    temp = (readScales(1)/ CH2Scale);
   }
   if (Mode == "4V ADC") {
-    CH1Scale = 2048 / 4;
+    CH2Scale = 2048 / 4;
     setADCChannel(0);
-    temp = ((ADCRead() * 4096 / 64) / CH1Scale);
+    temp = ((ADCRead() * 4096 / 64) / CH2Scale);
   }
 
-
-
 if (Mode == "TRIANGLE") {
-    
-    
     TestTriangle = TestTriangle+0.01;
     if ( TestTriangle >= 1){TestTriangle = -1 ;}
     temp = TestTriangle ;
   }
-
+  //Serial.print("CH2 out:"); Serial.println(temp);  
   return temp;
 }
-
-
