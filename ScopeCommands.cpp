@@ -269,16 +269,13 @@ void fastADChandler(void){
         } 
       buffer[2][NumberofSamplesRead]=temp;
       NumberofSamplesRead++;
-      if (NumberofSamplesRead >= MAX_Samples()) {
-        Set_Data_RTS(true); // stop doing it!
-        // all read, so scale and send to the scopestring
-          for (int sample=0;sample < NumberofSamplesRead;sample++){
+      if ((NumberofSamplesRead >= MAX_Samples()) && !Data_RTS()){    // all read, so scale and send to the scopestring
+           for (int sample=0;sample < NumberofSamplesRead;sample++){
                BuildScopeDataString(String((buffer[0][sample])/scale0, 3),String((buffer[1][sample])/scale1, 3),String((buffer[2][sample])/scaleb, 1 ));
             }
-            
         Serial.print(" r");Serial.print(NumberofSamplesRead) ;  Serial.println(">");     
-       
-        }// limited to  number of samples to the screen width 
+        Set_Data_RTS(true); // stop doing it!
+        }  // limited to  number of samples to the screen width ?
     } //while
       // NOW add datalog (first sample only) for fast samples?
      if ( getDataLog() ) {   // ?? Allow 
