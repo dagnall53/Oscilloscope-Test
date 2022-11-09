@@ -415,30 +415,34 @@ var dataLogFlag = false;
 //  console.log(wsMessageArray[3]);
 //  console.log("... ParseDuplex %i ", wsMessageArray.length);
  // 
+  websock.send("RX");
  if(wsMessageArray[1] === "ADC") {
     if(wsMessageArray[2] === "DUPLEX") {  
       if(wsMessageArray.length > 3) { 
-        //websock.send("HasBeenSent  0"); 
+ 
         Data_Length=0; 
 				for(var Count = 3; Count <= (wsMessageArray.length-1); Count++)	{ 
-
           demograph.updatePoints( [ parseFloat(Offset[0])+parseFloat(wsMessageArray[Count]), 
                                     parseFloat(Offset[1])+parseFloat(wsMessageArray[Count+1]) ,
-                                    parseFloat(Offset[2])+ parseFloat(Scale[2])*parseBinary(wsMessageArray[Count+2] , 0), // digital data 
+                                    parseFloat(Offset[2])+ parseFloat(Scale[2])*parseBinary(wsMessageArray[Count+2] , 0), 
                                     parseFloat(Offset[3])+ parseFloat(Scale[3])*parseBinary(wsMessageArray[Count+2] , 1) ]);
           Count++;Count++;
 					Data_Length ++;
-        
-        }
+         }
         // note use 3 and 4 as index to get first sample only
         console.log ( " parseDuplexData() read: %i", Data_Length);
+        data2send="";
+        data2send = "OK  ";
+        data2send += (Data_Length) ;  // how many recieved?
+         websock.send(data2send);        // Clears up flags and makes ready for next sample set.
+        
         // NEED value data for legends display Just take FIRST reading.. 
         demograph.updateLegends( [ parseFloat(wsMessageArray[3]), 
                                    parseFloat(wsMessageArray[4]),
                                    parseBinary(wsMessageArray[5] , 0),
                                    parseBinary(wsMessageArray[5] , 1) ]);
         demograph.updateTimestamps();
-        websock.send("Data_accepted "); // Clears up flags
+        
       }
     }
   UpdateDisplay();
@@ -461,7 +465,7 @@ var dataLogFlag = false;
   demograph.drawHorizontalLines()
   if (demograph.timestamps) {demograph.drawTimestamps()}
   demograph.drawGraph()
-  //websock.send("HasBeenSent  1"); 
+
  }
 
  function selectStripChart()
@@ -473,15 +477,14 @@ var dataLogFlag = false;
     }
 
  function ClearStripChart(){
-       websock.send("Data_accepted "); // Clears up flags, should initiate first websock send.. 
-        //websock.send("HasBeenSent  1");   // should initiate first websock send.. 
-        websock.send("PicoGraph setup Finished "); 
+       websock.send("OK  0 "); // Clears up flags, should initiate first websock send.. 
+       websock.send("PicoGraph setup Finished "); 
  }   
 
  function InitialSetStripChart() {
         websock.send("SCOPE DUPLEX 2  TRIANGLE");    // set ch2 = TRIANGLE  // note double space after 1 or 2 
         websock.send("SCOPE DUPLEX 1  INT ADC"); // set duplex and ch 1 = INT 
-        SampleRateUpdate(250); // 250us fast option 10ms in us
+        SampleRateUpdate(1000); // 1000us fast option  in us
         //websock.send("SCOPE WS_Timer 200");
         ClearStripChart();
         DisableNonPresentOptions(); // test with all disabled in setup
@@ -1131,10 +1134,8 @@ function colorArray(len) {
                } 
              Data_Length = 0;
              Data_Updated = false;
-            // websock.send("HasBeenSent  1"); 
-            } else 
-            {console.log (" No Data ");//websock.send("HasBeenSent  1 ");
-            } 
+               } else 
+            {console.log (" No Data "); } 
         } 
          
       }
@@ -1280,9 +1281,9 @@ function colorArray(len) {
         </select> </div>
       <div class= "VertSelectBox" > <span class= "SettingsTitle" >Sample Rate</span> <select id="xScaleSampleRateElement" class="VertBoxStyle" onchange="changeSampleRate();" >
           <option value="100" > 100us </option>
-          <option value="250" selected="selected"  > 250us </option>
+          <option value="250" > 250us </option>
           <option value="500" > 0.5ms</option>
-          <option value="1000" >1ms</option>
+          <option value="1000" selected="selected">1ms</option>
           <option value="2000" >2ms </option>
           <option value="5000" >5ms </option>
           <option value="10000"  >10ms</option>

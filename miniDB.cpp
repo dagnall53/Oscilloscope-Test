@@ -7,7 +7,8 @@ bool uartScopeFlag;
 bool DuplexModeFlag;
 bool _scopePause;
 bool _OTA_ACTIVE;
-bool _data_sending;
+bool _ACK,_HasBeenSent;
+bool _RTS ;
 String uartScopeData;
 String adcScopeData1;
 String adcScopeData2;
@@ -18,25 +19,32 @@ int _MAX_Samples = 400;   //  testd to 300 (faults at 400?) with fast 1 ch 8266 
 
 long _MyTempTime,_MyTimer[]={0,0,0,0,0};
 long _TTemp,           _T[]={0,0,0,0,0};
-
+bool _set[5];
+char _Loc[5][25];
 // test functions
 void _printStatus(char* location){
-  Serial.printf(" at<%s>   RTS<%i>   Sent?<%i>  Accepted?<%i>   ",location, Data_RTS(), HasBeenSent() , HasBeenAccepted() );
+  Serial.printf("AT <%s> Pause<%i>  Data_RTS<%i>  HBS<%i>  ACK<%i>   ",location,PAUSE(), Data_RTS(),HBS(),  ACK() );
   Serial.println();
 }
 
 
 
 void _StartTestTimers(){
-  _MyTempTime = micros();
+  
   
   for (int i=0 ;i<=4 ;i++){
+    strcpy(_Loc[i], ""); 
+    _set[i]=false;
     _MyTimer[i] = micros();
   }
+  _MyTempTime = micros();
  }
 
-void _Mark_Time(int input){
+void _Mark_Time(int input , char* location ){
   _T[input]= micros()-_MyTimer[input];
+  strcpy(_Loc[input],location);
+  _set[input]=true;
+  
 }
 
 long _PrintTime( int input){
@@ -44,17 +52,38 @@ long _PrintTime( int input){
 }
 
 void _printalltimes(){
- Serial.printf(" Marked Times (0):%i   (1)%i    (2)%i   (3)%i  (4)%i us",_PrintTime(0),_PrintTime(1),_PrintTime(2),_PrintTime(3),_PrintTime(4)); 
+  
+ Serial.printf(" Marked Times ");
+ for (int i=0 ;i<=4 ;i++){
+  if ( _set[i]){Serial.printf("(%s):%i ",_Loc[i],_PrintTime(i));}
+ }Serial.println();
+ }
+
+bool HBS(void){
+  return _HasBeenSent;
+  }
+  void SetHBS(bool set) {
+ //if (set) {Serial.println( "SetHBS ON ");}else{Serial.println ( "SetHBS OFF ");}//Serial.println(" set HBS %s", set) 
+// if ((set)) {Serial.print( "<");}
+ _HasBeenSent = set;
+ }
+
+
+bool Data_RTS (void){
+  return _RTS;
+}
+void Set_Data_RTS( bool set){
+  // if false also reset Numberof samples read counter ?
+  _RTS = set;
 }
 
 
-bool HasBeenAccepted(void){
-  return _data_sending;
+bool ACK(void){
+  return _ACK;
   }
 
-void _SetHasBeenAccepted( bool set){
-   if (set) {Serial.println( "HBAcc ON ");}else{Serial.println ( "HBAcc OFF ");}//Serial.println(" set HBA %s", set) 
-  _data_sending=set; 
+void _SetACK( bool set){
+     _ACK=set; 
 }
 
 
@@ -64,7 +93,9 @@ int MAX_Samples(){
 
 void SetNSamples(int samples){
   _MAX_Samples = samples;
- Serial.print("Updating N samples for fast sampling to:");Serial.println(samples);
+ // _printStatus("Updating Nsamples");
+ Serial.print("N samples is now:");Serial.println(samples);
+ 
 }
 
 
@@ -187,8 +218,8 @@ void setPAUSE(bool Pause){
   Serial.print(" Setting Pause to:");
   Serial.print(Pause);
   _scopePause = Pause;
-  _printStatus(" Setting_Pause ");
-  if(!Pause){ Set_Data_RTS(false); SetHBS(false); _SetHasBeenAccepted(true); // should trigger new samples. 
+  //_printStatus(" Setting_Pause ");
+  if(!Pause){ Set_Data_RTS(false); _SetACK(true); // should trigger new samples. 
   }
 }
 bool PAUSE(){

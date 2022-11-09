@@ -26,12 +26,8 @@
 int ScreenUpdate(int A) ;
 int Screen_U_time();
 
-bool HasBeenSent(void);
-void SetHBS(bool set);
 
 
-bool Data_RTS (void);
-void Set_Data_RTS( bool set);
 void ResetNumberofSamplesread(void);
 int readNumberofsamplesRead(void);
 

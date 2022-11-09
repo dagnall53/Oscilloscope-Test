@@ -153,7 +153,7 @@ void setup() {
 
   Wire.begin(_SDA, _SCL);
   scopeInit();
-  setWS_Timer(500);  // initial  lazy flash timer for scope sampling rate timebase gets reset when pc connects html
+  //setWS_Timer(500);  // initial  lazy flash timer for scope sampling rate timebase gets reset when pc connects html
   setsampleuSTimer(5000);  //us = 5ms
   SetScalesConnected(0);
   currentTime = millis();
@@ -175,7 +175,7 @@ void setup() {
   setPAUSE(true);  // do not start ADC immediately!
   DoingOTA(false);
   Set_Data_RTS (false);
-  SetHBS (true);
+ 
 }
 
 void BROADCAST(String MSG) {
@@ -190,43 +190,45 @@ void LEDFLASH(void) {
 void loop() {
   currentTime = millis();
   serialEvent();
-  MDNS.update(); //was called by ArduinoOTA!!
+  MDNS.update(); //was originally called (HIDDEN!) by ArduinoOTA!!
   webSocket.loop();
   server.handleClient();
   //Original
   if (  (currentTime - oldTimeADC) >= (getsampleuSTimer()/1000) )  {   //  sample rate is sent in us  BUT ONLY sample if Browser is OK to recieve!
     oldTimeADC = currentTime;_StartTestTimers();// _printStatus("\r\n Inside ADC call");
-    if (!PAUSE() && !Data_RTS() && HasBeenAccepted() ){                // hasbeenaccepted is FROM the BROWSER - so do not send until it has been recieved
-    
-      if (getsampleuSTimer() <= 3000){
-        fastADChandler();}  // Run faster, sends multiple samples as a group but  with just one adc and digital 
+    if (!PAUSE() && !Data_RTS() && ACK() ){                // ACK is FROM the BROWSER - so do not send until it has been recieved
+      _SetACK(false);
+//Serial.print("Start ADC read");_Mark_Time(0,"StartADC");
+      if (getsampleuSTimer() <=2100){
+        fastADChandler();}  // Run faster, sends multiple samples as a websock group but  with just one adc and digital 
         else{ADCHandler();} //  duplex +digital, multi sources 
-        _SetHasBeenAccepted(false);yield;
-        SetHBS(false);
-        _Mark_Time(1);
-        _printStatus("--Just ended ADC call");
-        _Mark_Time(2);
-    
-   // _printalltimes();  // use this timer to see how long it actually takes to get samples.. 
-   //Serial.printf(" ADC handler %i   %i    %i us",_PrintTime(0),_PrintTime(1),_PrintTime(2));
-  }}
+        SetHBS(false);  _SetACK(false);
+        //_Mark_Time(1,"ADC Done");
+        //_printStatus("--Just ended ADC call");
+        // _printalltimes();  // use this timer to see how long it actually takes to get samples.. 
+       //Serial.printf(" ADC handler %i   %i    %i us",_PrintTime(0),_PrintTime(1),_PrintTime(2));
+     }
+  }
 
   if (webSocketData != "") {
     webSocketDataInterpreter(webSocket, webSocketData);
    // Serial.println("Websocket data Handle");
     webSocketData = "";
   }
-  if ((!PAUSE())  && Data_RTS() && !HasBeenSent()  ){  // HasBeenSent is LOCAL  DATA RTS is from the scope adc readings
+   //_printStatus("218");
+  if ( !PAUSE()  && Data_RTS() && !HBS() ){ // !HBS() or !ACK?//  DATA RTS() is from the scope adc readings so send the reading but only once!
      //Serial.print("/");Serial.print(readNumberofsamplesRead());
     //Serial.println(scopeHandler(webSocket));  // scopehandler returns the sent data 
-    //_SetHasBeenAccepted(false);
-    _printStatus("--Starting scopehandler ");
+   
+    //_printStatus("Starting Scopehandler ");
     LEDFLASH(); 
     scopeHandler(webSocket);
     webSocketData = "";
     oldTime = millis(); 
-    SetHBS(true);  //dont send twice
-    _printStatus(" FINISHED Scopehandler ");// resets for new samples
+    delay(1); 
+    SetHBS(true);  //dont send twice ?
+    //_Mark_Time(2,"Scopehandler done");
+    //_printStatus(" FINISHED Scopehandler ");// resets for new samples
      // NOW... wait for webbrowser to acknowledge?
    } 
 

@@ -1,6 +1,15 @@
 #include "WebsocketInterpreter.h"
 
 
+void StartNewReadings(){
+  ResetNumberofSamplesread();
+    Set_Data_RTS(false);
+  //  SetHBS(true); 
+  //  _SetACK(true);       // should trigger next samples.  
+}
+
+
+
 String DataOutput1;
 extern void handleTest();
 void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKETDATA)
@@ -13,28 +22,32 @@ void webSocketDataInterpreter(WebSocketsServer &WEBSOCKETOBJECT, String WEBSOCKE
   if(WEBSOCKETDATA.startsWith("REQUEST HW LIST")){
   SendHW_LIST(WEBSOCKETOBJECT);
   }
+
+  if(WEBSOCKETDATA.startsWith("RX")){
+  SetHBS(true);
+ // Serial.print("Browser has data ");
+  delay(1);
+   SetHBS(true); 
+  StartNewReadings();
+} 
   
   if(WEBSOCKETDATA.startsWith("ScopeNpoints")){
     topLevelToken = "ScopeNpoints";
    SetNSamples(WEBSOCKETDATA.substring(topLevelToken.length()).toInt());
    }
   
- if(WEBSOCKETDATA.startsWith("Data_accepted"))
+ if(WEBSOCKETDATA.startsWith("OK  "))
   { 
-    Serial.println("WebBrowser Data Accepted ");
-    SetHBS(true);
-    ResetNumberofSamplesread();
-    Set_Data_RTS(false); //SetHBS(false); 
-    _SetHasBeenAccepted(true); // should trigger new samples.    
-    _printStatus("DataAccepted");
+    //Serial.println("WebBrowser Data parsed ");
+    topLevelToken = "OK  ";
+    //_Mark_Time(3,"Data Accepted");
+    // _printalltimes();  // use this timer to see how long it actually takes to get samples.. 
+   // Serial.print("Parsed{");Serial.print(WEBSOCKETDATA.substring(topLevelToken.length()).toInt());Serial.println("} samples ");
+    _SetACK(true);   
+   //StartNewReadings();
   }
 
- if (WEBSOCKETDATA.startsWith("HasBeenSent")){
-       topLevelToken = "HasBeenSent ";
-    Serial.println("WebBrowser HBS ");   
-   SetHBS(WEBSOCKETDATA.substring(topLevelToken.length()).toInt());
-
- }
+ 
 if(WEBSOCKETDATA.startsWith("SERIAL_BAUD"))
   { 
    topLevelToken = "SERIAL_BAUD";

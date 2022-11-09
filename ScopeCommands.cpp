@@ -25,8 +25,8 @@ byte LastChanRead = 0;
 int NumberofSamplesRead = 0;
 float TestTriangle = 0;
 float TestTriangle1 =0;
-bool _RTS ;
-bool _HasBeenSent;
+
+
 
 byte ScopeDigInput0, ScopeDigInput1;
 int Screen_update_time;
@@ -37,24 +37,6 @@ int Screen_U_time() {
   return Screen_update_time;
 }
 
-bool HasBeenSent(void){
-  
-  return _HasBeenSent;
-}
-void SetHBS(bool set) {
- if (set) {Serial.println( "SetHBS ON ");}else{Serial.println ( "SetHBS OFF ");}//Serial.println(" set HBS %s", set) 
- if ((set)) {Serial.print( "<");}
- _HasBeenSent = set;
-}
-
-
-bool Data_RTS (void){
-  return _RTS;
-}
-void Set_Data_RTS( bool set){
-  // if false also reset Numberof samples read counter ?
-  _RTS = set;
-}
 
 void SendHW_LIST(WebSocketsServer& WEBSOCKETOBJECT){
         channelModeOutput1 = "Hardware_LIST_(scales,50,60) ";
@@ -176,7 +158,7 @@ String scopeHandler(WebSocketsServer& WEBSOCKETOBJECT) {
   String _output_summary = "";
 // only doing "duplex mode" now.. 
         //Serial.print("duplex send");
-        channelModeOutput1 = "SCOPE ADC DUPLEX";
+        channelModeOutput1 = "SCOPE ADC DUPLEX";     // could probably use spaces for ADC and Duplex as dat transfers - trigger position ? 
         channelModeOutput1 += String(getADCScopeData1());  // getADCScopeData1 has special DUPLEX mode that captures BOTH channels 
         WEBSOCKETOBJECT.broadcastTXT(channelModeOutput1);
        // _output_summary += " [" + channelModeOutput1 + "]";
@@ -247,7 +229,7 @@ void fastADChandler(void){
   TRION2 = (Mode2 == "TRIANGLE");
    // checks for !Data_RTS before being called
    // Build up (FULL!) message for websock while RTS is false..
-  while(NumberofSamplesRead <= MAX_Samples()) {  // max number of samples and as fast as possible? 
+  while(!Data_RTS()) {  // max number of samples and as fast as possible? 
     while ( micros() <= getsampleuSTimer() +_lastsampletime ){ yield;  } //  pause to synch with sample rate
     _lastsampletime=micros();
     temp=0;buffer[0][NumberofSamplesRead]=0; buffer[1][NumberofSamplesRead]=0;buffer[2][NumberofSamplesRead]=0;
@@ -269,12 +251,13 @@ void fastADChandler(void){
         } 
       buffer[2][NumberofSamplesRead]=temp;
       NumberofSamplesRead++;
-      if ((NumberofSamplesRead >= MAX_Samples()) && !Data_RTS()){    // all read, so scale and send to the scopestring
-           for (int sample=0;sample < NumberofSamplesRead;sample++){
+      if ((NumberofSamplesRead >= MAX_Samples())){    // all read, so scale and send to the scopestring 
+         Set_Data_RTS(true); // stop doing the While Loop
+         for (int sample=0;sample < NumberofSamplesRead;sample++){
                BuildScopeDataString(String((buffer[0][sample])/scale0, 3),String((buffer[1][sample])/scale1, 3),String((buffer[2][sample])/scaleb, 1 ));
             }
-        Serial.print(" r");Serial.print(NumberofSamplesRead) ;  Serial.println(">");     
-        Set_Data_RTS(true); // stop doing it!
+//         Serial.print("Sent<");Serial.print(NumberofSamplesRead) ;  Serial.println(">");     
+       
         }  // limited to  number of samples to the screen width ?
     } //while
       // NOW add datalog (first sample only) for fast samples?
@@ -296,24 +279,22 @@ void fastADChandler(void){
 
 
 
-void ADCHandler(void) {  // NOW DUPLEX CH1/CH2 +digital third channel  ONLY reads BOTH channels and digitals and builds up the strings to send data in bulk
+void ADCHandler(void) {  // NOW "SLOW" DUPLEX CH1/CH2 +digital third channel  reads BOTH channels and digitals and builds up the strings to send SINGLE set out 
   float temp1,temp2;
   float _digital;
-   if ( !Data_RTS() ) {  // Build up message for websock while RTS is false..
-   
-    temp1=ChannelRead1();temp2=ChannelRead2(); _digital= DigitalPortRead();
-    
-    BuildScopeDataString(String(temp1, 3),String(temp2, 3),String(_digital, 1 ));
-   
-    NumberofSamplesRead++;  
-    if (every(NumberofSamplesRead,50) )  {Serial.print("-");} 
-    //if (every(NumberofSamplesRead,50) )  {Serial.print(Data_RTS());Serial.println("-");}
-    if (NumberofSamplesRead >= MAX_Samples()) {Set_Data_RTS(true);  Serial.println(">");       }// limit number of samples to the screen width 
-    if (getsampleuSTimer() >= 5000) {Set_Data_RTS(true); 
-       if (!getDataLog()){Serial.println(">"); }   // gives tidy <> in serial print (< is HasBeenSent )
-    }
-   } 
-  if ((getDataLog()) && (getsampleuSTimer() >= 5000)) {   // ?? Allow faster update rate for slow samples per second
+  
+ // while(!Data_RTS()) {  // max number of samples and as fast as possible? 
+  if ( !Data_RTS() ) {  // Build up SINGLE message for websock while RTS is false.. (RTS CHECK IS ALSO IN entry from main Scope-test 
+      temp1=ChannelRead1();temp2=ChannelRead2(); _digital= DigitalPortRead();
+      BuildScopeDataString(String(temp1, 3),String(temp2, 3),String(_digital, 1 ));
+      NumberofSamplesRead++;  // in case I need to use bulk send again
+    // if (every(NumberofSamplesRead,50) )  {Serial.print("-");}  // use these if we decide later to re- include multi sample websocks here
+    // if (every(NumberofSamplesRead,50) )  {Serial.print(Data_RTS());Serial.println("-");}
+   // if (NumberofSamplesRead >= MAX_Samples()) {Set_Data_RTS(true);  Serial.println(">");       }// limit number of samples to the screen width 
+       
+        Set_Data_RTS(true); //Serial.println("1>");    // gives tidy <> in serial print 
+     }
+  if ( getDataLog())  {   // ?? log it ?
      sendTime = millis();
       Serial.println("");
       Serial.print("DL Time:");
@@ -322,9 +303,8 @@ void ADCHandler(void) {  // NOW DUPLEX CH1/CH2 +digital third channel  ONLY read
       Serial.print(sendTime % 1000); // debugging follows ...
       int _DIG = _digital; //integer it 
       Serial.printf("CH1:  %.3f  CH2: %.3f  Dig %id  ", temp1,temp2, _DIG );
-   }
-  
- }
+   }//datalogger?
+}
 
 
 float ChannelRead1(void) {

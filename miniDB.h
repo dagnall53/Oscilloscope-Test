@@ -2,17 +2,22 @@
 
 
 void _printStatus(char* location);
+
 // timing for tests
 void _StartTestTimers();
-
-void _Mark_Time(int input);
-
+void _Mark_Time(int input , char* location );
 long _PrintTime( int input);
 void _printalltimes();  // prints out all marked times
 
-bool HasBeenAccepted(void);
+bool ACK(void);
+void _SetACK( bool set);
 
-void _SetHasBeenAccepted( bool set);
+bool HBS(void);  // prevents double trigger of Websoc send 
+void SetHBS(bool set);
+
+
+bool Data_RTS (void);
+void Set_Data_RTS( bool set);
 
 // Terminal 
 void SetBaud (int input);
