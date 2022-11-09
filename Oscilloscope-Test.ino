@@ -20,6 +20,7 @@
 
 static const uint8_t LED = 16;
 #ifdef ESP32  
+  #include <ESPmDNS.h>
   #include <WiFi.h>
   #include <WiFiClient.h>
   #include <WebServer.h>
@@ -47,6 +48,19 @@ static const uint8_t LED = 16;
 #include "WebsocketInterpreter.h"
 #include "OTA_Web.h"
 
+#ifdef ESP32  
+byte APMODE_BOOT_PIN = 13;  //DAG  press this pin to ground to start in AP mode..
+byte D_in1 = 15;            //DAG
+byte D_in2 = 2;            //DAG
+String string_in1 = "(15)";
+String string_in2 = "(2)";
+byte _SDA = 16;   //05
+byte _SCL = 17;   //04
+byte _Data = 22;  // for hx 711
+byte _Clock = 19;  // hx711
+#else
+
+
 byte APMODE_BOOT_PIN = D7;  //DAG  press this pin to ground to start in AP mode..
 byte D_in1 = D7;            //DAG
 byte D_in2 = D6;            //DAG
@@ -56,7 +70,7 @@ byte _SDA = D4;   //05
 byte _SCL = D5;   //04
 byte _Data = D2;  // for hx 711
 byte _Clock = D1;  // hx711
-
+#endif
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length);
 void handleRoot();
@@ -190,7 +204,10 @@ void LEDFLASH(void) {
 void loop() {
   currentTime = millis();
   serialEvent();
+  #ifdef ESP32 
+  #else
   MDNS.update(); //was originally called (HIDDEN!) by ArduinoOTA!!
+  #endif
   webSocket.loop();
   server.handleClient();
   //Original
@@ -236,9 +253,21 @@ void loop() {
 }
 
 
+#ifdef ESP32
+void hexdump(const void *mem, uint32_t len, uint8_t cols = 16) {
+ const uint8_t* src = (const uint8_t*) mem;
+ Serial.printf("\n[HEXDUMP] Address: 0x%08X len: 0x%X (%d)", (ptrdiff_t)src, len, len);
+ for(uint32_t i = 0; i < len; i++) {
+   if(i % cols == 0) {
+  Serial.printf("\n[0x%08X] 0x%08X: ", (ptrdiff_t)src, i);
+  }
+  Serial.printf("%02X ", *src);
+  src++;
+  }
+  Serial.printf("\n");
 
-
-
+}
+#endif
 
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
@@ -262,8 +291,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
       break;
     case WStype_BIN:
       Serial.printf("[%u] get binary length: %u\r\n", num, length);
-      hexdump(payload, length);
-
+      
+      hexdump(payload, length);   /// from debug.h in esp8266
+     
       // echo data back to browser
       webSocket.sendBIN(num, payload, length);
       break;
