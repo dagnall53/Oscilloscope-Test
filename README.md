@@ -22,5 +22,13 @@ Digital inputs (D7/D6) are presented as simple binary scale: D7 is 2Vor 0V, D6 i
 Connecting D7 to ground during power up will force the unit to AP mode. Connect to "Oscilloscope" and 192.168.4.1 
 Otherwise Wifi manager will automatically attempt to connect to known network, or present an options list on 192.168.4.1 
 
+#ESP32 Version
+Note that the internal ADC is known to be poor! This is just for ROUGH measurements!. But there are two genuine input channels, although both are titled "A0" (a left over from the esp8266!) .
+![image](https://user-images.githubusercontent.com/6950560/201144552-92e9394f-e7e9-4628-af5d-a764ca439872.png)
+
+I have built in option to read the internal Hall sensor. Scaling is roughly centiTesla (!).
+I used an averaging to reduce the HALL noise, so the sample rate drops (automaticay) if the Hall is selected.
+Also the hall autozeros on channel selection == Hall.
+![image](https://user-images.githubusercontent.com/6950560/201144222-bf573bb7-021d-4888-9ea1-e41bb2aa8774.png)
 
 
