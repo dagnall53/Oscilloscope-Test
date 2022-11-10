@@ -1,5 +1,8 @@
 #include "miniDB.h"
 #include "ScopeCommands.h"
+
+
+
 int WS_Timer,sampleuSTimer;
 bool dataLogFlag;
 bool dataTAREFlag;
@@ -26,8 +29,43 @@ void _printStatus(char* location){
   Serial.printf("AT <%s> Pause<%i>  Data_RTS<%i>  HBS<%i>  ACK<%i>   ",location,PAUSE(), Data_RTS(),HBS(),  ACK() );
   Serial.println();
 }
+  uint8_t Analog1 = 0;
+  uint8_t Analog2 = 0;
+
+void SETESP32ANALOG(int pin1, int pin2 ){
+/*https://randomnerdtutorials.com/esp32-adc-analog-read-arduino-ide/
 
 
+*/
+#ifdef  ESP32 // ESP32 ADC1 = 32-36 and 39
+// ESPadc2 ADC2= 25,26,14,12,13,4,2,15,0
+
+Serial.printf("Setting up Analog input CH1(%i)  and CH2(%i) \r\n",pin1,pin2);
+  Analog1  = pin1;
+  Analog2 = pin2;
+#else
+  Analog1  = 0;
+  Analog2 = 0;
+#endif
+
+}
+
+int ANALOGREAD1(){  // not needed!?
+#ifdef ESP32
+return analogRead(Analog1)/4;
+#else
+  return analogRead(0);
+#endif   
+}
+// ESP32 ADC1 = 32-36 and 39
+// ESPadc2 ADC2= 25,26,14,12,13,4,2,15,0
+int ANALOGREAD2( ){
+#ifdef ESP32
+return analogRead(Analog2)/4;
+#else
+  return analogRead(0);
+#endif   
+}
 
 void _StartTestTimers(){
   

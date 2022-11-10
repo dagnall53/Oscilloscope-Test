@@ -8,6 +8,8 @@ const int _BufferSize = 512;
 boolean ScalesPresent;
 String channelModeOutput1;
 String channelModeOutput2;
+String LastCh1Mode,LastCh2Mode;
+
 bool toggledChannelOffFlag1;
 bool toggledChannelOffFlag2;
 byte ADCAddress = 54;  //adc address on 12c
@@ -29,6 +31,7 @@ float TestTriangle1 =0;
 
 
 byte ScopeDigInput0, ScopeDigInput1;
+
 int Screen_update_time;
 int ScreenUpdate(int A) {
   Screen_update_time = A;
@@ -36,8 +39,33 @@ int ScreenUpdate(int A) {
 int Screen_U_time() {
   return Screen_update_time;
 }
+#ifdef ESP32
+#else
+int hallRead(void){
+  return 0;
+}
+#endif
 
+float  _hallZero;
+float HallZero(){
+  return _hallZero;
+}
+const int HallAverage = 30;
+const float HallScale= 1.5;  // my magnet is ~0.6mT at 30mm this to give ~cT range (0.6 on scale) 
+float SetHallZero(){  // gain is 9
+  float hall=0;
+   for (int i=0 ; i<= HallAverage; i++){
+  hall+=hallRead();}
+  _hallZero= hall/HallAverage;
+return _hallZero;
+}
 
+float ReadHall(){ 
+  float hall=0;
+  for (int i=0 ; i<= HallAverage; i++){
+    hall+=hallRead();}
+    return ((hall/HallAverage)-HallZero())/HallScale; 
+}
 void SendHW_LIST(WebSocketsServer& WEBSOCKETOBJECT){
         channelModeOutput1 = "Hardware_LIST_(scales,50,60) ";
         channelModeOutput1 += String(ScalesConnected());  channelModeOutput1 += " " ;
@@ -235,14 +263,14 @@ void fastADChandler(void){
     temp=0;buffer[0][NumberofSamplesRead]=0; buffer[1][NumberofSamplesRead]=0;buffer[2][NumberofSamplesRead]=0;
     TestTriangle1 = TestTriangle1+0.5;
     if ( TestTriangle1 >=330){TestTriangle1 =-330;}  // to fake +1-1 without changing scale facto
-      
-     if (ADC1ON) {buffer[0][NumberofSamplesRead]=analogRead(0);}
-     if (ADC2ON) {
-       if (ADC1ON) {buffer[1][NumberofSamplesRead]=buffer[0][NumberofSamplesRead];}
-               else{buffer[1][NumberofSamplesRead]=analogRead(0);}
-               }
      if (TRION1) {buffer[0][NumberofSamplesRead]=TestTriangle1;}
      if (TRION2) {buffer[1][NumberofSamplesRead]=TestTriangle1;}
+     
+     if (ADC1ON) {buffer[0][NumberofSamplesRead]=ANALOGREAD1();}
+
+     if (ADC2ON) {buffer[1][NumberofSamplesRead]=ANALOGREAD2();}
+
+
         if (digitalRead(ScopeDigInput0) == 1) {
           temp = temp + 1;  // offset!
           }
@@ -311,6 +339,7 @@ float ChannelRead1(void) {
   float temp =0;
   String Mode;
   Mode=getChanneMode1();
+  if (Mode!=LastCh1Mode){ }
   //Serial.println(Mode);
   if (Mode == "DIG") {
     temp=0;
@@ -324,8 +353,14 @@ float ChannelRead1(void) {
   }
   if (Mode == "INT ADC") {
    CH1Scale = 1024 / 3.3;  //3.3v ref, output in mv1024 not 2048
-   temp = (float(analogRead(0)) / CH1Scale); // force float?
+   temp = (float(ANALOGREAD1()) / CH1Scale); // force float?
    }
+
+  if (Mode == "HALL") {
+    if (Mode!=LastCh1Mode){SetHallZero(); }// force new zero if changed to this
+   CH1Scale = 1;  //
+   temp = (float(ReadHall()) / CH1Scale); 
+   } 
 
   if (Mode == "SCALES") {
     CH1Scale = -100000 ;  //DAG NB set in initscales to grammes, 5KG EXPECTED TO READ same AS 5 V! 
@@ -347,6 +382,7 @@ float ChannelRead1(void) {
     temp = TestTriangle1 ;
     }
  //Serial.print("CH1 out:"); Serial.println(temp);  
+ LastCh1Mode=Mode;
   return temp;
 }
 
@@ -375,9 +411,14 @@ float ChannelRead2(void) {
     } 
     CH2Scale = 1;
   }
+  if (Mode == "HALL") {
+   CH2Scale = 1;  //
+   if (Mode!=LastCh2Mode){SetHallZero(); }// force new zero if changed to this
+   temp = (float(ReadHall()) / CH2Scale); // force float?
+   } 
   if (Mode == "INT ADC") {
     CH2Scale = 1024 / 3.3;  //3.3v ref, output in V
-    temp = (analogRead(0)) / CH2Scale;
+    temp = (ANALOGREAD2()) / CH2Scale;
   }
 
   if (Mode == "SCALES") {
@@ -400,5 +441,6 @@ if (Mode == "TRIANGLE") {
     temp = TestTriangle ;
   }
   //Serial.print("CH2 out:"); Serial.println(temp);  
+  LastCh2Mode=Mode;
   return temp;
 }

@@ -430,7 +430,7 @@ var dataLogFlag = false;
 					Data_Length ++;
          }
         // note use 3 and 4 as index to get first sample only
-        console.log ( " parseDuplexData() read: %i", Data_Length);
+        //console.log ( " parseDuplexData() read: %i", Data_Length);
         data2send="";
         data2send = "OK  ";
         data2send += (Data_Length) ;  // how many recieved?
@@ -481,10 +481,10 @@ var dataLogFlag = false;
        websock.send("PicoGraph setup Finished "); 
  }   
 
- function InitialSetStripChart() {
+ function InitialSetStripChart() {            // THIS IS THE SETUP at the START start setup 
         websock.send("SCOPE DUPLEX 2  TRIANGLE");    // set ch2 = TRIANGLE  // note double space after 1 or 2 
         websock.send("SCOPE DUPLEX 1  INT ADC"); // set duplex and ch 1 = INT 
-        SampleRateUpdate(1000); // 1000us fast option  in us
+        SampleRateUpdate(5000); // 5000us (slow start - all functionality) fast option  in us
         //websock.send("SCOPE WS_Timer 200");
         ClearStripChart();
         DisableNonPresentOptions(); // test with all disabled in setup
@@ -566,7 +566,11 @@ var dataLogFlag = false;
 
  function checkforSPSTiming( element , element1 ){
   //console.log(" SPScheck %s  currentxplot %s", element, document.getElementById("xScaleSampleRateElement").value);
-  
+  if ( (element == "HALL") || (element1 =="HALL")){xPlotSampleRate = 100000;  
+        SampleRateUpdate(xPlotSampleRate);
+         console.log("FORCING slower SPS %d ms for Hall Averaged Sensor readings",xPlotSampleRate);  }
+
+
   if ( ( (element == "SCALES") || (element == "SCALESB") || (element1 == "SCALES") || (element1 == "SCALESB") ) 
      && (document.getElementById("xScaleSampleRateElement").value <= 100000) ) {   // scales take circa 75ms to read      
         if ((element == "SCALES")&&(element1 == "SCALESB")){ xPlotSampleRate = 200000;}
@@ -586,13 +590,14 @@ var dataLogFlag = false;
     document.getElementById(stringVal).innerHTML=CHSource[i]; 
     //document.getElementById("CH_SourceID[0]").innerHTML=CHSource[0]; 
     //document.getElementById("CH_SourceID[1]").innerHTML=CHSource[1];
-
+     Offset[i]=2;  // DEFAULT
     if ( CHSource[i] == "DIG") {demograph.units[i]="B";}
       demograph.units[2]="b";demograph.units[3]="b";
       demograph.units[i]="V";
       if  ( (CHSource[i] == "SCALES") || (CHSource[i] == "SCALESB") ) {
             demograph.units[i]="Kg";}
       if ( CHSource[i] == "DIG") {demograph.units[i]="B";}
+      if ( CHSource[i] == "HALL") {demograph.units[i]="cT"; Offset[i]=5;}
      var dataout="";
       dataout = "SCOPE DUPLEX "+(i+1)+"  "; // note two spaces
       dataout += CHSource[i];
@@ -1269,6 +1274,7 @@ function colorArray(len) {
            <option id="ADC_ID" value="4V ADC" >4V ADC</option>
            <option id="ADC_ID1" value="64V ADC">64V ADC</option>
            <option value="TRIANGLE">-1+1Triangle test</option>
+           <option id="HALL1" value="HALL"> Hall- ESP32 only</option> 
            
         </select> </div>
       <div class= "VertSelectBox" > <span class= "SettingsTitle" >Channel 2</span> <select id="channelSelectElement2" class="VertBoxStyle" onchange="changeChannelSelect( id , 1);" >
@@ -1278,14 +1284,15 @@ function colorArray(len) {
           <option id="ADC_ID2" value="4V ADC">4V ADC</option>
           <option id="ADC_ID3" value="64V ADC">64V ADC</option>
           <option value="TRIANGLE" selected="selected">-1+1Triangle test</option>
+          <option id="HALL2" value="HALL"> Hall- ESP32 only</option> 
         </select> </div>
       <div class= "VertSelectBox" > <span class= "SettingsTitle" >Sample Rate</span> <select id="xScaleSampleRateElement" class="VertBoxStyle" onchange="changeSampleRate();" >
           <option value="100" > 100us </option>
           <option value="250" > 250us </option>
           <option value="500" > 0.5ms</option>
-          <option value="1000" selected="selected">1ms</option>
+          <option value="1000" >1ms</option>
           <option value="2000" >2ms </option>
-          <option value="5000" >5ms </option>
+          <option value="5000" selected="selected" >5ms </option>
           <option value="10000"  >10ms</option>
           <option value="20000">20ms</option>
           <option value="100000">100ms</option>

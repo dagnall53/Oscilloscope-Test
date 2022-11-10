@@ -2,6 +2,9 @@
 
 
 void _printStatus(char* location);
+void SETESP32ANALOG(int pin1, int pin2 );// (PIN1, atten, pin2,atten)
+int ANALOGREAD1( ); //esp32 and 8266 compatible. 
+int ANALOGREAD2( ); //esp32 and 8266 compatible. 
 
 // timing for tests
 void _StartTestTimers();

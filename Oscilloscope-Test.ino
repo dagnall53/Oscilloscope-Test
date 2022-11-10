@@ -17,6 +17,7 @@
  // This update 13:11 17 August 2017
 
 */
+// tested WEMOS / LOLIN D32
 
 static const uint8_t LED = 16;
 #ifdef ESP32  
@@ -49,18 +50,24 @@ static const uint8_t LED = 16;
 #include "OTA_Web.h"
 
 #ifdef ESP32  
+// ESP32 ADC1 = 32-35  AVOID  36 and 39 as these are related to Hall
+// ESPadc2 ADC2= 25,26,14,12,13,4,2,15,0  (Do not work ?? needs work to explore ) 
+byte CH1A= 35;               // see line 171 (~)
+byte CH2A= 32;
 byte APMODE_BOOT_PIN = 13;  //DAG  press this pin to ground to start in AP mode..
 byte D_in1 = 15;            //DAG
-byte D_in2 = 2;            //DAG
+byte D_in2 = 2;             //DAG
 String string_in1 = "(15)";
 String string_in2 = "(2)";
-byte _SDA = 16;   //05
-byte _SCL = 17;   //04
+byte _SDA = 12;   
+byte _SCL = 14;   
 byte _Data = 22;  // for hx 711
 byte _Clock = 19;  // hx711
 #else
+// ESP8266 pins.. (see Scopecommands.h)
 
-
+byte CH1A= 0;
+byte CH2A= 0;
 byte APMODE_BOOT_PIN = D7;  //DAG  press this pin to ground to start in AP mode..
 byte D_in1 = D7;            //DAG
 byte D_in2 = D6;            //DAG
@@ -122,9 +129,11 @@ void setup() {
   digitalWrite(LED, 0);  //DAG Turn on the blue LED
   delay(1000);
   digitalWrite(LED, 1);
+  pinMode(APMODE_BOOT_PIN, INPUT_PULLUP);
   //ScreenUpdate(5000) ;
   //Serial.print(" Set up screen refresh at "); Serial.println (Screen_U_time());
-
+  Serial.println("********************");
+  Serial.printf("  Boot select pin(%i)  is <%i> \r\n",APMODE_BOOT_PIN,digitalRead(APMODE_BOOT_PIN) );
   if (!digitalRead(APMODE_BOOT_PIN)) {
     WiFi.disconnect();
     WiFi.softAP(ssid, password);
@@ -152,24 +161,22 @@ void setup() {
       }
     } else { Serial.println("mDNS responder started");}
     LEDFLASH();
-    Serial.print("Connect to http://Oscilloscope.local or http://");
+    Serial.print("Connect to http://scope.local or http://");
     Serial.println(WiFi.localIP());
 
     MDNS.addService("http", "tcp", 80);
     MDNS.addService("ws", "tcp", 81);
   }
   digitalWrite(LED, 1);  //DAG led OFF?
-  
-   // ArduinoOTA.setHostname("Oscilloscope");
-   // ArduinoOTA.begin();
+  SETESP32ANALOG(CH1A,CH2A);
   
   WebserverSetup();
 
   Wire.begin(_SDA, _SCL);
   scopeInit();
-  //setWS_Timer(500);  // initial  lazy flash timer for scope sampling rate timebase gets reset when pc connects html
   setsampleuSTimer(5000);  //us = 5ms
   SetScalesConnected(0);
+  //Serial.printf("Hall zero is %f ", SetHallZero());
   currentTime = millis();
   LastSampleTime = currentTime;
   SettingsData = "";
